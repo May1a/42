@@ -71,7 +71,7 @@ Implemented in `api/42/[...path].ts`.
 
 ### `GET /api/auth/login`
 
-Implemented in `api/auth/login.ts`.
+Implemented in `server/index.ts`.
 
 Redirects to:
 
@@ -84,18 +84,21 @@ Query parameters:
 - `client_id`: `FORTY_TWO_CLIENT_ID`.
 - `redirect_uri`: `${origin}/api/auth/callback`.
 - `response_type`: `code`.
-- `scope`: query param `scope`, defaulting to `public`.
+- `scope`: the app always requests `public projects`, merged with optional
+  `FORTY_TWO_OAUTH_SCOPES` and any `scope` query param so first authorization
+  covers all current in-app workflows.
+- `state`: random CSRF token stored in an HttpOnly cookie until callback.
 
 Official verification: the 42 OAuth web application flow documents
 `/oauth/authorize` with `client_id`, `redirect_uri`, `scope`, `state`, and
 `response_type=code`.
 
-Important rebuild note: the official flow recommends a `state` value for CSRF
-protection. The current app does not send or validate `state`.
+The callback validates the `state` value before exchanging the authorization
+code.
 
 ### `GET /api/auth/callback`
 
-Implemented in `api/auth/callback.ts`.
+Implemented in `server/index.ts`.
 
 Receives `?code=...`, then exchanges it with:
 

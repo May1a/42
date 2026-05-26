@@ -14,7 +14,12 @@ Create `.env.lakebed.server` from `.env.lakebed.server.example` and fill in the
 ```txt
 FORTY_TWO_CLIENT_ID=...
 FORTY_TWO_CLIENT_SECRET=...
+FORTY_TWO_OAUTH_SCOPES=public projects
 ```
+
+`FORTY_TWO_OAUTH_SCOPES` is optional. The app always asks for the `public` and
+`projects` scopes it currently needs, and this setting can add more 42 scopes if
+you enable them for the OAuth application later.
 
 For local OAuth, configure the 42 application callback as:
 

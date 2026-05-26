@@ -5,6 +5,9 @@ export type AuthSession = {
   expiresAt: number;
 };
 
+export const FORTY_TWO_BASE_AUTH_SCOPES = ["public", "projects"] as const;
+export const FORTY_TWO_BASE_AUTH_SCOPE = FORTY_TWO_BASE_AUTH_SCOPES.join(" ");
+
 export type Pagination = {
   total: number | null;
   page: number | null;
@@ -20,6 +23,14 @@ export type Campus = {
   country?: string;
   time_zone?: string;
   website?: string;
+};
+
+export type CampusUser = {
+  id: number;
+  user_id?: number;
+  campus_id?: number;
+  is_primary?: boolean;
+  campus?: Campus;
 };
 
 export type Cursus = {
@@ -49,6 +60,8 @@ export type FortyTwoUser = {
   active?: boolean;
   alumni?: boolean;
   campus?: Campus[];
+  campus_users?: CampusUser[];
+  primary_campus?: Campus;
   primary_campus_id?: number;
   cursus_users?: CursusUser[];
   projects_users?: ProjectUser[];
@@ -157,6 +170,55 @@ export function displayName(user?: FortyTwoUser | null) {
 
 export function userImage(user?: FortyTwoUser | null) {
   return user?.image?.versions?.small || user?.image?.versions?.medium || user?.image?.link || "";
+}
+
+export function mergeScopeLists(...scopeLists: Array<string | null | undefined>) {
+  const scopes = new Set<string>();
+  for (const scope of FORTY_TWO_BASE_AUTH_SCOPES) {
+    scopes.add(scope);
+  }
+  for (const scopeList of scopeLists) {
+    for (const scope of (scopeList ?? "").split(/[\s,]+/)) {
+      const normalized = scope.trim();
+      if (normalized) {
+        scopes.add(normalized);
+      }
+    }
+  }
+  return Array.from(scopes).join(" ");
+}
+
+export function primaryCampusId(user?: FortyTwoUser | null) {
+  const explicitId = user?.primary_campus_id;
+  if (explicitId) {
+    return String(explicitId);
+  }
+
+  const primaryCampusUser = user?.campus_users?.find((entry) => entry.is_primary && entry.campus_id);
+  if (primaryCampusUser?.campus_id) {
+    return String(primaryCampusUser.campus_id);
+  }
+
+  if (user?.primary_campus?.id) {
+    return String(user.primary_campus.id);
+  }
+
+  return user?.campus?.[0]?.id ? String(user.campus[0].id) : "";
+}
+
+export function primaryCampusName(user?: FortyTwoUser | null) {
+  const campusId = primaryCampusId(user);
+  const campus =
+    user?.campus?.find((entry) => String(entry.id) === campusId) ||
+    user?.campus_users?.find((entry) => entry.campus_id && String(entry.campus_id) === campusId)?.campus ||
+    user?.primary_campus ||
+    user?.campus?.[0];
+
+  if (campus?.name) {
+    return campus.name;
+  }
+
+  return campusId ? `Campus ${campusId}` : "No campus";
 }
 
 export function formatDateTime(value?: string | null) {

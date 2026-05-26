@@ -2,9 +2,12 @@ import { Link, Route, Router, Routes, useLocation, useParams } from "lakebed/cli
 import type { ComponentChildren } from "preact";
 import { useEffect, useMemo, useState } from "preact/hooks";
 import {
+  FORTY_TWO_BASE_AUTH_SCOPE,
   displayName,
   formatDate,
   formatDateTime,
+  primaryCampusId,
+  primaryCampusName,
   scopeIncludes,
   userImage,
   type ApiError,
@@ -367,17 +370,13 @@ function useCursus(session: AuthSession | null) {
   return useApiResource<Cursus[]>(session, "/cursus", { "page.size": 100, sort: "name" }, REFERENCE_TTL);
 }
 
-function primaryCampusId(user: FortyTwoUser | null) {
-  return user?.primary_campus_id ? String(user.primary_campus_id) : "";
-}
-
 function oneYearFromNow() {
   const date = new Date();
   date.setFullYear(date.getFullYear() + 1);
   return date.toISOString();
 }
 
-function loginHref(scope = "public") {
+function loginHref(scope = FORTY_TWO_BASE_AUTH_SCOPE) {
   const returnTo = typeof window === "undefined" ? "/" : `${window.location.pathname}${window.location.search}`;
   return `/api/auth/login?scope=${encodeURIComponent(scope)}&return_to=${encodeURIComponent(returnTo)}`;
 }
@@ -433,7 +432,7 @@ function RequireSession({ session, children }: { session: AuthSession | null; ch
       <section>
         <EmptyState>Log in with 42 to load this page.</EmptyState>
         <div className="mt-4">
-          <ButtonLink href={loginHref("public")}>Login with 42</ButtonLink>
+          <ButtonLink href={loginHref()}>Login with 42</ButtonLink>
         </div>
       </section>
     );
@@ -528,7 +527,7 @@ function Layout({ session, setSession }: { session: AuthSession | null; setSessi
                   Sign out
                 </button>
               ) : (
-                <a className="text-neutral-700 underline underline-offset-4 hover:text-neutral-950" href={loginHref("public")}>
+                <a className="text-neutral-700 underline underline-offset-4 hover:text-neutral-950" href={loginHref()}>
                   Login with 42
                 </a>
               )}
@@ -562,7 +561,7 @@ function HomePage({ session }: { session: AuthSession | null }) {
     <section>
       <PageTitle
         title="My 42"
-        aside={session && !sessionExpired(session) ? <span>scope: {session.scope || "public"}</span> : <ButtonLink href={loginHref("public")}>Login with 42</ButtonLink>}
+        aside={session && !sessionExpired(session) ? <span>scope: {session.scope || "public"}</span> : <ButtonLink href={loginHref()}>Login with 42</ButtonLink>}
       />
       {!session || sessionExpired(session) ? (
         <EmptyState>Log in to see your profile, campus, projects, evaluations, and slots.</EmptyState>
@@ -579,7 +578,7 @@ function HomePage({ session }: { session: AuthSession | null }) {
 
 function ProfileSummary({ user }: { user: FortyTwoUser }) {
   const image = userImage(user);
-  const campusName = user.campus?.find((campus) => campus.id === user.primary_campus_id)?.name || user.campus?.[0]?.name || "No campus";
+  const campusName = primaryCampusName(user);
   const mainCursus = user.cursus_users?.find((entry) => !entry.end_at) || user.cursus_users?.[0];
   return (
     <div className="grid gap-4 md:grid-cols-[120px_1fr]">
@@ -1119,7 +1118,7 @@ function SlotsPage({ session }: { session: AuthSession | null }) {
             <a className="inline-flex h-9 items-center border border-neutral-300 px-3 text-sm text-neutral-900 hover:border-neutral-950" href="https://profile.intra.42.fr/slots" rel="noreferrer" target="_blank">
               Open on 42
             </a>
-            <ButtonLink href={loginHref("public projects")}>Re-authorize</ButtonLink>
+            {!hasProjectsScope ? <ButtonLink href={loginHref()}>Refresh scopes</ButtonLink> : null}
           </>
         }
       />
@@ -1176,8 +1175,7 @@ function SettingsPage({ session, setSession }: { session: AuthSession | null; se
             <Info label="Storage" value="browser local storage" />
           </dl>
           <div className="mt-4 flex flex-wrap gap-2">
-            <ButtonLink href={loginHref("public")}>Login with public scope</ButtonLink>
-            <ButtonLink href={loginHref("public projects")}>Login with projects scope</ButtonLink>
+            <ButtonLink href={loginHref()}>Login with all app scopes</ButtonLink>
             <PlainButton onClick={() => setSession(null)}>Sign out</PlainButton>
           </div>
         </section>

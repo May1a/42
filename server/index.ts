@@ -1,4 +1,5 @@
 import { capsule, endpoint, json, redirect, text } from "lakebed/server";
+import { FORTY_TWO_BASE_AUTH_SCOPE, mergeScopeLists } from "../shared/forty-two";
 
 const FORTY_TWO_API_BASE = "https://api.intra.42.fr/v2";
 const FORTY_TWO_OAUTH_AUTHORIZE = "https://api.intra.42.fr/oauth/authorize";
@@ -123,7 +124,7 @@ function authLogin(ctx: { env: Record<string, string | undefined> }, req: { url:
   const origin = originForRequest(req);
   const redirectUri = `${origin}/api/auth/callback`;
   const state = randomState();
-  const scope = (req.query.get("scope") || "public").trim() || "public";
+  const scope = mergeScopeLists(FORTY_TWO_BASE_AUTH_SCOPE, ctx.env.FORTY_TWO_OAUTH_SCOPES, req.query.get("scope"));
   const returnTo = safeReturnTo(req.query.get("return_to"));
   const authorizeUrl = new URL(FORTY_TWO_OAUTH_AUTHORIZE);
 
