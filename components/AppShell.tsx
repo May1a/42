@@ -23,7 +23,8 @@ const nav = [
 
 export function loginHref(scope = FORTY_TWO_BASE_AUTH_SCOPE) {
   const returnTo = typeof window === "undefined" ? "/" : `${window.location.pathname}${window.location.search}`;
-  return `/api/auth/login?scope=${encodeURIComponent(scope)}&return_to=${encodeURIComponent(returnTo)}`;
+  const path = `/api/auth/login?scope=${encodeURIComponent(scope)}&return_to=${encodeURIComponent(returnTo)}`;
+  return typeof window === "undefined" ? path : new URL(path, window.location.origin).toString();
 }
 
 function NavLink({ href, children }: { href: string; children: ReactNode }) {

@@ -25,8 +25,18 @@ export function GET(request: NextRequest) {
   authorizeUrl.searchParams.set("scope", scope);
   authorizeUrl.searchParams.set("state", state);
 
-  const response = NextResponse.redirect(authorizeUrl);
-  response.headers.set("Cache-Control", "no-store");
+  const response = new NextResponse(
+    `<!doctype html><meta http-equiv="refresh" content="0;url=${authorizeUrl.toString()}"><a href="${authorizeUrl.toString()}">Continue to 42 login</a>`,
+    {
+      status: 302,
+      headers: {
+        "Cache-Control": "no-store",
+        "Content-Type": "text/html; charset=utf-8",
+        Location: authorizeUrl.toString(),
+        Refresh: `0;url=${authorizeUrl.toString()}`
+      }
+    }
+  );
   response.cookies.set(OAUTH_COOKIE, JSON.stringify({ state, returnTo }), {
     httpOnly: true,
     sameSite: "lax",
