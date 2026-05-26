@@ -1,2 +1,9 @@
 .lakebed/
 .env.lakebed.server
+node_modules
+.next
+.env.local
+convex/_generated
+tsconfig.tsbuildinfo
+tmp/
+migrations/raw/
