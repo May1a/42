@@ -1,28 +1,20 @@
 # 42 Explorer
 
-Next.js, Vercel, and Convex migration of the 42 Explorer app.
+Fresh Lakebed rebuild of the 42 Explorer app.
 
 ## Run locally
 
 ```sh
-npm install
-npm run dev
+npx lakebed dev
 ```
 
-Create `.env.local` from `.env.local.example` and fill in the 42 OAuth,
-session, JWT, and Convex values:
+Create `.env.lakebed.server` from `.env.lakebed.server.example` and fill in the
+42 OAuth application credentials:
 
 ```txt
 FORTY_TWO_CLIENT_ID=...
 FORTY_TWO_CLIENT_SECRET=...
 FORTY_TWO_OAUTH_SCOPES=public projects
-AUTH_SESSION_SECRET=...
-AUTH_JWT_PRIVATE_KEY=...
-AUTH_JWT_PUBLIC_JWK=...
-AUTH_JWT_ISSUER=http://localhost:3000
-AUTH_JWT_AUDIENCE=42explorer
-NEXT_PUBLIC_CONVEX_URL=...
-CONVEX_URL=...
 ```
 
 `FORTY_TWO_OAUTH_SCOPES` is optional. The app always asks for the `public` and
@@ -38,26 +30,28 @@ http://localhost:3000/api/auth/callback
 For production, configure:
 
 ```txt
-https://<your-domain>/api/auth/callback
-```
-
-Convex development runs in a second terminal:
-
-```sh
-npm run dev:convex
+https://42.lakebed.app/api/auth/callback
 ```
 
 ## Deploy
 
-Deploy the Next.js app on Vercel and configure the same environment variables
-there. Configure Convex production environment variables with matching issuer,
-audience, and JWKS URL: `https://<your-domain>/.well-known/jwks.json`.
+This app uses server-side `fetch` for OAuth token exchange and for the 42 API
+proxy, so Lakebed requires a claimed deploy before hosted server env and
+outbound fetch can run.
+
+```sh
+npx lakebed deploy
+npx lakebed claim
+npx lakebed deploy
+npx lakebed domains add 42.lakebed.app
+```
 
 ## Notes
 
 - V1 is read-first. Slot writes, project writes, evaluation booking, and profile
   image upload are intentionally omitted.
-- The 42 proxy remains exposed as
+- The current Lakebed endpoint router supports exact endpoint paths, not
+  wildcard endpoint paths. The 42 proxy is therefore exposed as
   `/api/42?path=/me` rather than `/api/42/me`.
-- The browser no longer receives the raw 42 access token. It is stored only in
-  an encrypted HTTP-only session cookie.
+- The browser stores the 42 access token in local storage and the server does
+  not persist 42 tokens.
