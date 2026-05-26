@@ -7,3 +7,4 @@ convex/_generated
 tsconfig.tsbuildinfo
 tmp/
 migrations/raw/
+.vercel
