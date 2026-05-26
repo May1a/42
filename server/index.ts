@@ -1,4 +1,6 @@
-import { capsule, endpoint, json, redirect, text } from "lakebed/server";
+import { capsule, endpoint, json, mutation, query, redirect, string, table, text } from "lakebed/server";
+import type { ServerContext, TableApi } from "lakebed/server";
+import { cleanDisplayName, cleanFeatureDetails, cleanFeatureTitle, type FeatureProposal } from "../shared/features";
 import { FORTY_TWO_BASE_AUTH_SCOPE, mergeScopeLists } from "../shared/forty-two";
 
 const FORTY_TWO_API_BASE = "https://api.intra.42.fr/v2";
@@ -10,6 +12,41 @@ const SECOND_WINDOW_LIMIT = 2;
 const HOUR_WINDOW_LIMIT = 1200;
 const PAGE_SIZE_LIMIT = 100;
 
+type FeatureProposalRow = {
+  id: string;
+  title: string;
+  details: string;
+  authorId: string;
+  authorName: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type FeatureVoteRow = {
+  id: string;
+  proposalId: string;
+  voterId: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type FeatureProposalTable = TableApi<{
+  title: string;
+  details: string;
+  authorId: string;
+  authorName: string;
+}>;
+
+type FeatureVoteTable = TableApi<{
+  proposalId: string;
+  voterId: string;
+}>;
+
+type FeatureDb = ServerContext["db"] & {
+  featureProposals: FeatureProposalTable;
+  featureVotes: FeatureVoteTable;
+};
+
 type RateBucket = {
   secondStartedAt: number;
   secondCount: number;
@@ -18,6 +55,10 @@ type RateBucket = {
 };
 
 const rateBuckets = new Map<string, RateBucket>();
+
+function featureDb(ctx: ServerContext) {
+  return ctx.db as FeatureDb;
+}
 
 function originForRequest(req: { url: string; headers: { get(name: string): string | null } }) {
   const url = new URL(req.url, "http://localhost");
@@ -367,14 +408,112 @@ async function proxy42(req: {
   }
 }
 
+function proposedFeatures(ctx: ServerContext) {
+  const db = featureDb(ctx);
+  const proposals = db.featureProposals.orderBy("createdAt", "desc").all() as FeatureProposalRow[];
+  const votes = db.featureVotes.all() as FeatureVoteRow[];
+  const voteCounts = new Map<string, number>();
+  const votedByMe = new Set<string>();
+
+  for (const vote of votes) {
+    voteCounts.set(vote.proposalId, (voteCounts.get(vote.proposalId) ?? 0) + 1);
+    if (vote.voterId === ctx.auth.userId) {
+      votedByMe.add(vote.proposalId);
+    }
+  }
+
+  return proposals.map(
+    (proposal): FeatureProposal => ({
+      id: proposal.id,
+      title: proposal.title,
+      details: proposal.details,
+      authorName: proposal.authorName,
+      createdAt: proposal.createdAt,
+      updatedAt: proposal.updatedAt,
+      voteCount: voteCounts.get(proposal.id) ?? 0,
+      votedByMe: votedByMe.has(proposal.id)
+    })
+  );
+}
+
+function proposeFeature(ctx: ServerContext, title: string, details: string) {
+  const db = featureDb(ctx);
+  const cleanTitle = cleanFeatureTitle(title);
+  const cleanDetails = cleanFeatureDetails(details);
+  if (!cleanTitle) {
+    return null;
+  }
+
+  const row = db.featureProposals.insert({
+    title: cleanTitle,
+    details: cleanDetails,
+    authorId: ctx.auth.userId,
+    authorName: cleanDisplayName(ctx.auth.displayName)
+  }) as FeatureProposalRow;
+
+  db.featureVotes.insert({
+    proposalId: row.id,
+    voterId: ctx.auth.userId
+  });
+
+  return row.id;
+}
+
+function voteForFeature(ctx: ServerContext, proposalId: string) {
+  const db = featureDb(ctx);
+  const proposal = db.featureProposals.get(proposalId);
+  if (!proposal) {
+    return false;
+  }
+
+  const existing = (db.featureVotes.where("proposalId", proposalId).all() as FeatureVoteRow[]).find((vote) => vote.voterId === ctx.auth.userId);
+  if (existing) {
+    return true;
+  }
+
+  db.featureVotes.insert({
+    proposalId,
+    voterId: ctx.auth.userId
+  });
+  return true;
+}
+
+function removeFeatureVote(ctx: ServerContext, proposalId: string) {
+  const db = featureDb(ctx);
+  const existing = (db.featureVotes.where("proposalId", proposalId).all() as FeatureVoteRow[]).find((vote) => vote.voterId === ctx.auth.userId);
+  if (!existing) {
+    return false;
+  }
+
+  db.featureVotes.delete(existing.id);
+  return true;
+}
+
 const proxyRoot = "/api/42";
 const proxySlash = "/api/42/";
 
 export default capsule({
   name: "42-explorer",
-  schema: {},
-  queries: {},
-  mutations: {},
+  schema: {
+    featureProposals: table({
+      title: string(),
+      details: string(),
+      authorId: string(),
+      authorName: string()
+    }),
+    featureVotes: table({
+      proposalId: string(),
+      voterId: string()
+    })
+  },
+  queries: {
+    proposedFeatures: query(proposedFeatures)
+  },
+  mutations: {
+    proposeFeature: mutation(proposeFeature),
+    voteForFeature: mutation(voteForFeature),
+    removeFeatureVote: mutation(removeFeatureVote)
+  },
   endpoints: {
     authLogin: endpoint({ method: "GET", path: "/api/auth/login" }, authLogin),
     authCallback: endpoint({ method: "GET", path: "/api/auth/callback" }, authCallback),

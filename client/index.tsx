@@ -1,6 +1,7 @@
-import { Link, Route, Router, Routes, useLocation, useParams } from "lakebed/client";
+import { Link, Route, Router, Routes, useLocation, useMutation, useParams, useQuery } from "lakebed/client";
 import type { ComponentChildren } from "preact";
 import { useEffect, useMemo, useState } from "preact/hooks";
+import { cleanFeatureDetails, cleanFeatureTitle, type FeatureProposal } from "../shared/features";
 import {
   FORTY_TWO_BASE_AUTH_SCOPE,
   displayName,
@@ -490,6 +491,30 @@ function TextField({
   );
 }
 
+function TextAreaField({
+  label,
+  value,
+  onInput,
+  placeholder
+}: {
+  label: string;
+  value: string;
+  onInput: (value: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <label className="grid gap-1 text-sm text-neutral-700">
+      <span>{label}</span>
+      <textarea
+        className="min-h-28 resize-y border border-neutral-300 px-2 py-2 text-neutral-950"
+        placeholder={placeholder}
+        value={value}
+        onInput={(event) => onInput(event.currentTarget.value)}
+      />
+    </label>
+  );
+}
+
 function NavLink({ to, children }: { to: string; children: ComponentChildren }) {
   const location = useLocation();
   const active = to === "/" ? location.pathname === "/" : location.pathname === to || location.pathname.startsWith(`${to}/`);
@@ -519,6 +544,7 @@ function Layout({ session, setSession }: { session: AuthSession | null; setSessi
               <NavLink to="/projects">Projects</NavLink>
               <NavLink to="/evaluations">Evaluations</NavLink>
               <NavLink to="/slots">Slots</NavLink>
+              <NavLink to="/features">Feature ideas</NavLink>
               <NavLink to="/settings">Settings</NavLink>
             </nav>
             <div className="mt-6 border-t border-neutral-200 pt-4 text-sm">
@@ -545,6 +571,7 @@ function Layout({ session, setSession }: { session: AuthSession | null; setSessi
               <Route path="/projects/:id" element={<ProjectDetailPage session={session} />} />
               <Route path="/evaluations" element={<EvaluationsPage session={session} />} />
               <Route path="/slots" element={<SlotsPage session={session} />} />
+              <Route path="/features" element={<FeatureIdeasPage />} />
               <Route path="/settings" element={<SettingsPage session={session} setSession={setSession} />} />
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
@@ -1157,6 +1184,149 @@ function SlotList({ slots }: { slots: Slot[] }) {
         </tbody>
       </table>
     </div>
+  );
+}
+
+type FeatureSort = "popular" | "newest";
+
+function FeatureIdeasPage() {
+  const features = useQuery<FeatureProposal[]>("proposedFeatures");
+  const proposeFeature = useMutation<[string, string], string | null>("proposeFeature");
+  const voteForFeature = useMutation<[string], boolean>("voteForFeature");
+  const removeFeatureVote = useMutation<[string], boolean>("removeFeatureVote");
+  const [title, setTitle] = useState("");
+  const [details, setDetails] = useState("");
+  const [sort, setSort] = useState<FeatureSort>("popular");
+  const [saving, setSaving] = useState(false);
+  const [pendingVote, setPendingVote] = useState("");
+  const [formError, setFormError] = useState("");
+  const cleanTitle = cleanFeatureTitle(title);
+  const cleanDetails = cleanFeatureDetails(details);
+  const sortedFeatures = useMemo(() => {
+    const rows = [...features];
+    if (sort === "newest") {
+      return rows.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    }
+    return rows.sort((a, b) => b.voteCount - a.voteCount || b.createdAt.localeCompare(a.createdAt));
+  }, [features, sort]);
+  const totalVotes = features.reduce((sum, feature) => sum + feature.voteCount, 0);
+
+  async function submitFeature(event: Event) {
+    event.preventDefault();
+    if (!cleanTitle) {
+      setFormError("Add a short title first.");
+      return;
+    }
+
+    setSaving(true);
+    setFormError("");
+    try {
+      const id = await proposeFeature(cleanTitle, cleanDetails);
+      if (!id) {
+        setFormError("Add a short title first.");
+        return;
+      }
+      setTitle("");
+      setDetails("");
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : "Could not save that idea.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function toggleVote(feature: FeatureProposal) {
+    setPendingVote(feature.id);
+    try {
+      if (feature.votedByMe) {
+        await removeFeatureVote(feature.id);
+      } else {
+        await voteForFeature(feature.id);
+      }
+    } finally {
+      setPendingVote("");
+    }
+  }
+
+  return (
+    <section>
+      <PageTitle
+        title="Feature ideas"
+        aside={
+          <div className="flex flex-wrap gap-2">
+            <span className="border border-neutral-200 px-2 py-1 text-neutral-600">{features.length} ideas</span>
+            <span className="border border-neutral-200 px-2 py-1 text-neutral-600">{totalVotes} votes</span>
+          </div>
+        }
+      />
+      <div className="grid gap-6 xl:grid-cols-[360px_1fr]">
+        <form className="border border-neutral-200 bg-neutral-50 p-4" onSubmit={submitFeature}>
+          <h2 className="mb-4 text-lg font-medium text-neutral-950">Propose an idea</h2>
+          <div className="grid gap-3">
+            <TextField label="Title" placeholder="Example: peer finder filters" value={title} onInput={setTitle} />
+            <TextAreaField label="Details" placeholder="What would make this useful?" value={details} onInput={setDetails} />
+            {formError ? <p className="text-sm text-red-700">{formError}</p> : null}
+            <button
+              className="inline-flex h-10 items-center justify-center border border-neutral-950 bg-neutral-950 px-4 text-sm font-medium text-white hover:bg-white hover:text-neutral-950 disabled:cursor-not-allowed disabled:border-neutral-300 disabled:bg-neutral-200 disabled:text-neutral-500"
+              disabled={!cleanTitle || saving}
+              type="submit"
+            >
+              {saving ? "Saving..." : "Submit idea"}
+            </button>
+          </div>
+        </form>
+
+        <section className="min-w-0">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-lg font-medium text-neutral-950">Interest board</h2>
+            <div className="inline-flex border border-neutral-300 text-sm">
+              <button className={`h-9 px-3 ${sort === "popular" ? "bg-neutral-950 text-white" : "text-neutral-700 hover:bg-neutral-100"}`} type="button" onClick={() => setSort("popular")}>
+                Popular
+              </button>
+              <button className={`h-9 border-l border-neutral-300 px-3 ${sort === "newest" ? "bg-neutral-950 text-white" : "text-neutral-700 hover:bg-neutral-100"}`} type="button" onClick={() => setSort("newest")}>
+                Newest
+              </button>
+            </div>
+          </div>
+          <FeatureList features={sortedFeatures} pendingVote={pendingVote} onVote={toggleVote} />
+        </section>
+      </div>
+    </section>
+  );
+}
+
+function FeatureList({ features, pendingVote, onVote }: { features: FeatureProposal[]; pendingVote: string; onVote: (feature: FeatureProposal) => void }) {
+  if (!features.length) {
+    return <EmptyState>No feature ideas yet.</EmptyState>;
+  }
+
+  return (
+    <ul className="grid gap-3">
+      {features.map((feature) => (
+        <li className="border border-neutral-200 bg-white p-4" key={feature.id}>
+          <div className="grid gap-4 sm:grid-cols-[1fr_auto]">
+            <div className="min-w-0">
+              <h3 className="break-words text-base font-semibold text-neutral-950">{feature.title}</h3>
+              {feature.details ? <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-neutral-700">{feature.details}</p> : null}
+              <p className="mt-3 text-xs text-neutral-500">
+                {feature.authorName} - {formatDateTime(feature.createdAt)}
+              </p>
+            </div>
+            <button
+              className={`flex h-[72px] min-w-[88px] flex-col items-center justify-center border px-3 text-sm ${
+                feature.votedByMe ? "border-neutral-950 bg-neutral-950 text-white" : "border-neutral-300 text-neutral-900 hover:border-neutral-950"
+              } disabled:cursor-wait disabled:opacity-60`}
+              disabled={pendingVote === feature.id}
+              type="button"
+              onClick={() => onVote(feature)}
+            >
+              <span className="text-xl font-semibold">{feature.voteCount}</span>
+              <span>{feature.votedByMe ? "Voted" : "Vote"}</span>
+            </button>
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }
 
