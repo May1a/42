@@ -31,9 +31,9 @@ const SELECTED_CAMPUS_KEY = "42explorer.selectedCampusId";
 const SELECTED_CURSUS_KEY = "42explorer.selectedCursusId";
 const LOCATIONS_AUTO_REFRESH_KEY = "42explorer.locationsAutoRefresh";
 const CACHE_PREFIX = "42explorer.cache.";
-const PROFILE_TTL = 60 * 1000;
-const SEARCH_TTL = 30 * 1000;
-const REFERENCE_TTL = 60 * 60 * 1000;
+const PROFILE_TTL = 10 * 60 * 1000;
+const SEARCH_TTL = 5 * 60 * 1000;
+const REFERENCE_TTL = 24 * 60 * 60 * 1000;
 
 type ApiState<T> = {
   data: T | null;
@@ -51,14 +51,28 @@ type StudentRow = {
 
 let nextAllowedApiAt = 0;
 let apiQueue: Promise<unknown> = Promise.resolve();
+let hourlyCount = 0;
+let hourlyStartedAt = 0;
+const SECOND_LIMIT = 2;
+const HOUR_LIMIT = 1200;
+const HOUR_MS = 60 * 60 * 1000;
 
 function enqueueApi<T>(work: () => Promise<T>) {
   const run = apiQueue.then(async () => {
+    const now = Date.now();
+    if (now - hourlyStartedAt >= HOUR_MS) {
+      hourlyStartedAt = now;
+      hourlyCount = 0;
+    }
+    if (hourlyCount >= HOUR_LIMIT) {
+      throw { status: 429, message: "Hourly API rate limit reached. Wait a bit and try again." } satisfies ApiError;
+    }
     const waitMs = nextAllowedApiAt - Date.now();
     if (waitMs > 0) {
       await new Promise((resolve) => setTimeout(resolve, waitMs));
     }
-    nextAllowedApiAt = Date.now() + 550;
+    nextAllowedApiAt = Date.now() + Math.ceil(1000 / SECOND_LIMIT);
+    hourlyCount += 1;
     return work();
   });
   apiQueue = run.catch(() => undefined);
@@ -889,7 +903,7 @@ function LocationsPage({ session }: { session: AuthSession | null }) {
     if (autoRefresh !== "on") {
       return;
     }
-    const handle = window.setInterval(() => setRefreshKey((value) => value + 1), 30 * 1000);
+    const handle = window.setInterval(() => setRefreshKey((value) => value + 1), 2 * 60 * 1000);
     return () => window.clearInterval(handle);
   }, [autoRefresh]);
 
@@ -1367,9 +1381,9 @@ function SettingsPage({ session, setSession }: { session: AuthSession | null; se
           <h2 className="mb-3 text-lg font-medium">Limits and cache</h2>
           <dl className="grid gap-3 text-sm md:grid-cols-2">
             <Info label="42 API rate limit" value="2 requests/second, 1,200 requests/hour" />
-            <Info label="Profile cache" value="60 seconds" />
-            <Info label="Reference cache" value="1 hour" />
-            <Info label="Search cache" value="30 seconds" />
+            <Info label="Profile cache" value="10 minutes" />
+            <Info label="Reference cache" value="24 hours" />
+            <Info label="Search cache" value="5 minutes" />
           </dl>
         </section>
       </div>

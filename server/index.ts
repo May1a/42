@@ -8,8 +8,6 @@ const FORTY_TWO_OAUTH_AUTHORIZE = "https://api.intra.42.fr/oauth/authorize";
 const FORTY_TWO_OAUTH_TOKEN = "https://api.intra.42.fr/oauth/token";
 const OAUTH_COOKIE = "forty_two_oauth";
 const OAUTH_COOKIE_MAX_AGE = 10 * 60;
-const SECOND_WINDOW_LIMIT = 2;
-const HOUR_WINDOW_LIMIT = 1200;
 const PAGE_SIZE_LIMIT = 100;
 
 type FeatureProposalRow = {
@@ -46,15 +44,6 @@ type FeatureDb = ServerContext["db"] & {
   featureProposals: FeatureProposalTable;
   featureVotes: FeatureVoteTable;
 };
-
-type RateBucket = {
-  secondStartedAt: number;
-  secondCount: number;
-  hourStartedAt: number;
-  hourCount: number;
-};
-
-const rateBuckets = new Map<string, RateBucket>();
 
 function featureDb(ctx: ServerContext) {
   return ctx.db as FeatureDb;
@@ -266,48 +255,6 @@ async function authCallback(ctx: { env: Record<string, string | undefined> }, re
   });
 }
 
-function rateLimitKey(req: { headers: { get(name: string): string | null } }, authorization: string) {
-  const forwardedFor = req.headers.get("x-forwarded-for")?.split(",")[0].trim();
-  const realIp = req.headers.get("x-real-ip")?.trim();
-  const client = forwardedFor || realIp || "local";
-  return `${client}:${authorization.slice(-12)}`;
-}
-
-function consumeRateLimit(key: string) {
-  const now = Date.now();
-  const existing = rateBuckets.get(key) ?? {
-    secondStartedAt: now,
-    secondCount: 0,
-    hourStartedAt: now,
-    hourCount: 0
-  };
-
-  if (now - existing.secondStartedAt >= 1000) {
-    existing.secondStartedAt = now;
-    existing.secondCount = 0;
-  }
-
-  if (now - existing.hourStartedAt >= 60 * 60 * 1000) {
-    existing.hourStartedAt = now;
-    existing.hourCount = 0;
-  }
-
-  if (existing.secondCount >= SECOND_WINDOW_LIMIT) {
-    rateBuckets.set(key, existing);
-    return { allowed: false, retryAfter: "1" };
-  }
-
-  if (existing.hourCount >= HOUR_WINDOW_LIMIT) {
-    rateBuckets.set(key, existing);
-    return { allowed: false, retryAfter: "3600" };
-  }
-
-  existing.secondCount += 1;
-  existing.hourCount += 1;
-  rateBuckets.set(key, existing);
-  return { allowed: true, retryAfter: "0" };
-}
-
 function cleanUpstreamPath(path: string | null) {
   const value = (path ?? "").trim();
   if (!value || !value.startsWith("/") || value.startsWith("//") || value.includes("://") || value.includes("?") || value.includes("#")) {
@@ -345,14 +292,6 @@ async function proxy42(req: {
   const upstreamPath = cleanUpstreamPath(req.query.get("path"));
   if (!upstreamPath) {
     return json({ error: "invalid_path", message: "Pass a safe upstream path like /me in the path query parameter." }, { status: 400 });
-  }
-
-  const rate = consumeRateLimit(rateLimitKey(req, authorization));
-  if (!rate.allowed) {
-    return json(
-      { error: "rate_limited", message: "Local 42 proxy limit reached. Try again shortly." },
-      { status: 429, headers: { "Retry-After": rate.retryAfter } }
-    );
   }
 
   const upstreamUrl = new URL(`${FORTY_TWO_API_BASE}${upstreamPath}`);
@@ -451,11 +390,6 @@ function proposeFeature(ctx: ServerContext, title: string, details: string) {
     authorName: cleanDisplayName(ctx.auth.displayName)
   }) as FeatureProposalRow;
 
-  db.featureVotes.insert({
-    proposalId: row.id,
-    voterId: ctx.auth.userId
-  });
-
   return row.id;
 }
 
@@ -489,9 +423,6 @@ function removeFeatureVote(ctx: ServerContext, proposalId: string) {
   return true;
 }
 
-const proxyRoot = "/api/42";
-const proxySlash = "/api/42/";
-
 export default capsule({
   name: "42-explorer",
   schema: {
@@ -517,17 +448,6 @@ export default capsule({
   endpoints: {
     authLogin: endpoint({ method: "GET", path: "/api/auth/login" }, authLogin),
     authCallback: endpoint({ method: "GET", path: "/api/auth/callback" }, authCallback),
-
-    proxyGet: endpoint({ method: "GET", path: proxyRoot }, (_ctx, req) => proxy42(req)),
-    proxyPost: endpoint({ method: "POST", path: proxyRoot }, (_ctx, req) => proxy42(req)),
-    proxyPatch: endpoint({ method: "PATCH", path: proxyRoot }, (_ctx, req) => proxy42(req)),
-    proxyPut: endpoint({ method: "PUT", path: proxyRoot }, (_ctx, req) => proxy42(req)),
-    proxyDelete: endpoint({ method: "DELETE", path: proxyRoot }, (_ctx, req) => proxy42(req)),
-
-    proxySlashGet: endpoint({ method: "GET", path: proxySlash }, (_ctx, req) => proxy42(req)),
-    proxySlashPost: endpoint({ method: "POST", path: proxySlash }, (_ctx, req) => proxy42(req)),
-    proxySlashPatch: endpoint({ method: "PATCH", path: proxySlash }, (_ctx, req) => proxy42(req)),
-    proxySlashPut: endpoint({ method: "PUT", path: proxySlash }, (_ctx, req) => proxy42(req)),
-    proxySlashDelete: endpoint({ method: "DELETE", path: proxySlash }, (_ctx, req) => proxy42(req))
+    proxyGet: endpoint({ method: "GET", path: "/api/42" }, (_ctx, req) => proxy42(req))
   }
 });
