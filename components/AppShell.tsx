@@ -8,18 +8,41 @@ import { EmptyState } from "./status";
 import { FORTY_TWO_BASE_AUTH_SCOPE } from "@/shared/forty-two";
 import { sessionExpired, type ClientSession } from "@/lib/use-session";
 
-const nav = [
-  ["/", "My 42"],
-  ["/dashboard", "Dashboard"],
-  ["/students", "Students"],
-  ["/locations", "Locations"],
-  ["/events", "Events"],
-  ["/projects", "Projects"],
-  ["/evaluations", "Evaluations"],
-  ["/slots", "Slots"],
-  ["/features", "Feature ideas"],
-  ["/settings", "Settings"]
-] as const;
+type NavItem = { href: string; label: string };
+type NavGroup = { label: string; items: NavItem[] };
+
+const nav: NavGroup[] = [
+  {
+    label: "Home",
+    items: [
+      { href: "/", label: "My 42" },
+      { href: "/dashboard", label: "Dashboard" }
+    ]
+  },
+  {
+    label: "Browse",
+    items: [
+      { href: "/students", label: "Students" },
+      { href: "/locations", label: "Locations" },
+      { href: "/events", label: "Events" },
+      { href: "/projects", label: "Projects" }
+    ]
+  },
+  {
+    label: "Evals",
+    items: [
+      { href: "/evaluations", label: "Evaluations" },
+      { href: "/slots", label: "Slots" }
+    ]
+  },
+  {
+    label: "Meta",
+    items: [
+      { href: "/features", label: "Feature ideas" },
+      { href: "/settings", label: "Settings" }
+    ]
+  }
+];
 
 export function loginHref(scope = FORTY_TWO_BASE_AUTH_SCOPE) {
   const returnTo = typeof window === "undefined" ? "/" : `${window.location.pathname}${window.location.search}`;
@@ -57,20 +80,25 @@ export function AppShell({ session, onLogout, children }: { session: ClientSessi
     <main className="app-shell">
       <aside className="sidebar">
         <Link className="brand" href="/">
-          42 Explorer
+          42 explorer
         </Link>
         <nav className="nav">
-          {nav.map(([href, label]) => (
-            <NavLink href={href} key={href}>
-              {label}
-            </NavLink>
+          {nav.map((group) => (
+            <div key={group.label}>
+              <div className="nav-group-label">{group.label}</div>
+              {group.items.map((item) => (
+                <NavLink href={item.href} key={item.href}>
+                  {item.label}
+                </NavLink>
+              ))}
+            </div>
           ))}
         </nav>
         <div className="sidebar-auth">
           {session && !expired ? (
             <div className="form-grid">
               <span className="mono">{session.user?.login}</span>
-              <PlainButton onClick={onLogout}>Sign out</PlainButton>
+              <PlainButton onClick={onLogout}>out</PlainButton>
             </div>
           ) : (
             <a href={loginHref()}>Login with 42</a>

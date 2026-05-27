@@ -37,6 +37,8 @@
   --amber-tint: oklch(95% 0.05 75);
   --vermillion: oklch(58% 0.18 28);
   --vermillion-tint: oklch(95% 0.04 28);
+
+  --sidebar-w: 220px;
 }
 
 html,
@@ -75,64 +77,146 @@ textarea {
   outline-offset: 2px;
 }
 
+::selection {
+  background: var(--plotter-blue-tint);
+  color: var(--ink);
+}
+
 /* ---- Shell ------------------------------------------------------------- */
 
 .app-shell {
   display: grid;
   min-height: 100vh;
-  grid-template-columns: 232px minmax(0, 1fr);
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
 }
 
 .sidebar {
-  border-right: 1px solid var(--rule);
+  border-right: 1px solid var(--rule-strong);
   background: var(--paper-rule);
-  padding: 20px;
+  padding: 24px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
 }
 
 .brand {
-  display: block;
-  margin-bottom: 20px;
-  font-size: 1.125rem;
-  font-weight: 600;
-  line-height: 1.3;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 28px;
+  padding: 0 8px;
   text-decoration: none;
   color: var(--ink);
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.brand::before {
+  content: "#";
+  color: var(--plotter-blue);
+  font-weight: 700;
 }
 
 .nav {
   display: grid;
-  gap: 4px;
+  gap: 1px;
+  flex: 1;
+}
+
+.nav-group-label {
+  padding: 16px 12px 4px;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+
+.nav-group-label:first-child {
+  padding-top: 0;
 }
 
 .nav-link {
-  display: block;
-  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
   color: var(--ink-soft);
   text-decoration: none;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   transition: background-color 80ms ease-out, color 80ms ease-out;
+  border-left: 2px solid transparent;
 }
 
 .nav-link:hover {
   color: var(--ink);
+  background: var(--paper);
 }
 
 .nav-link.active {
-  background: var(--ink);
-  color: var(--paper);
+  color: var(--ink);
+  background: var(--paper);
+  border-left-color: var(--ink);
+  font-weight: 500;
 }
 
 .sidebar-auth {
-  margin-top: 24px;
+  margin-top: 16px;
   border-top: 1px solid var(--rule);
-  padding-top: 16px;
+  padding-top: 12px;
   color: var(--ink-soft);
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
+}
+
+.sidebar-auth .form-grid {
+  align-items: center;
+  grid-template-columns: 1fr auto;
 }
 
 .content {
   min-width: 0;
-  padding: 32px;
+  padding: 0;
+}
+
+/* ---- Schematic header --------------------------------------------------- */
+
+.schematic-header {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  padding: 16px 32px 12px;
+  border-bottom: 2px solid var(--ink);
+  background: var(--paper);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.schematic-header h1 {
+  margin: 0;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+
+.schematic-header .page-aside {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  color: var(--ink-mute);
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.02em;
 }
 
 /* ---- Page chrome ------------------------------------------------------- */
@@ -143,16 +227,21 @@ textarea {
   justify-content: space-between;
   gap: 14px;
   margin-bottom: 24px;
-  border-bottom: 1px solid var(--rule-strong);
-  padding-bottom: 14px;
+  border-bottom: 2px solid var(--ink);
+  padding: 16px 32px 12px;
+  background: var(--paper);
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .page-title h1 {
   margin: 0;
-  font-size: 1.5rem;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-size: 0.9375rem;
   font-weight: 600;
-  line-height: 1.2;
   letter-spacing: -0.01em;
+  text-transform: uppercase;
 }
 
 .page-aside {
@@ -160,23 +249,31 @@ textarea {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  color: var(--ink-soft);
-  font-size: 0.8125rem;
+  color: var(--ink-mute);
   font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.02em;
+}
+
+.page-body {
+  padding: 24px 32px 48px;
 }
 
 .section-heading {
   margin: 0 0 12px;
-  font-size: 1.125rem;
-  font-weight: 500;
-  line-height: 1.3;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
 }
 
 /* ---- Grids ------------------------------------------------------------- */
 
 .grid {
   display: grid;
-  gap: 20px;
+  gap: 24px;
 }
 
 .two-col {
@@ -184,13 +281,13 @@ textarea {
 }
 
 .wide-board {
-  grid-template-columns: 360px minmax(0, 1fr);
+  grid-template-columns: 340px minmax(0, 1fr);
 }
 
 .filter-grid {
   display: grid;
   gap: 12px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   margin-bottom: 20px;
 }
 
@@ -212,11 +309,13 @@ textarea {
 }
 
 .empty {
-  border: 1px solid var(--rule);
+  border: 1px dashed var(--rule-strong);
   background: var(--paper-rule);
-  padding: 16px;
-  color: var(--ink-soft);
-  font-size: 0.875rem;
+  padding: 32px 16px;
+  color: var(--ink-mute);
+  font-size: 0.8125rem;
+  text-align: center;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
 }
 
 .error {
@@ -248,13 +347,16 @@ textarea {
 .button,
 .button-primary {
   display: inline-flex;
-  min-height: 36px;
+  min-height: 32px;
   align-items: center;
   justify-content: center;
-  padding: 0 12px;
+  padding: 0 10px;
   cursor: pointer;
   text-decoration: none;
-  font-size: 0.875rem;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   border-radius: 0;
   transition: background-color 80ms ease-out, color 80ms ease-out, border-color 80ms ease-out;
 }
@@ -262,11 +364,12 @@ textarea {
 .button {
   border: 1px solid var(--rule);
   background: var(--paper);
-  color: var(--ink);
+  color: var(--ink-soft);
 }
 
 .button:hover {
   border-color: var(--ink);
+  color: var(--ink);
 }
 
 .button-primary {
@@ -297,20 +400,28 @@ textarea {
 
 .field {
   display: grid;
-  gap: 5px;
+  gap: 4px;
   color: var(--ink-soft);
-  font-size: 0.875rem;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .input,
 .select {
-  height: 36px;
+  height: 32px;
   padding: 0 8px;
   border-radius: 0;
   border: 1px solid var(--rule);
   background: var(--paper);
   color: var(--ink);
-  font-size: 0.875rem;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 0.8125rem;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
   transition: border-color 80ms ease-out;
 }
 
@@ -326,14 +437,15 @@ textarea {
 }
 
 .textarea {
-  min-height: 112px;
+  min-height: 96px;
   resize: vertical;
   padding: 8px;
   border-radius: 0;
   border: 1px solid var(--rule);
   background: var(--paper);
   color: var(--ink);
-  font-size: 0.875rem;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 0.8125rem;
   transition: border-color 80ms ease-out;
 }
 
@@ -372,10 +484,13 @@ table {
 th {
   background: var(--paper-rule);
   color: var(--ink-soft);
-  font-weight: 500;
-  font-size: 0.75rem;
-  letter-spacing: 0.02em;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-weight: 600;
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
+  position: sticky;
+  top: 0;
 }
 
 th,
@@ -386,7 +501,7 @@ td {
 }
 
 td {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
 }
 
 tr:last-child td {
@@ -397,21 +512,30 @@ tr:hover td {
   background: var(--paper-rule);
 }
 
+td.mono a {
+  text-decoration: none;
+  font-weight: 500;
+}
+
+td.mono a:hover {
+  text-decoration: underline;
+}
+
 /* ---- Info grid --------------------------------------------------------- */
 
 .info-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 13px;
-  font-size: 0.875rem;
+  gap: 14px 24px;
+  font-size: 0.8125rem;
 }
 
 .info-label {
-  color: var(--ink-soft);
+  color: var(--ink-mute);
   font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
-  font-size: 0.75rem;
-  font-weight: 500;
-  letter-spacing: 0.02em;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
@@ -419,18 +543,25 @@ tr:hover td {
   overflow-wrap: anywhere;
 }
 
+.info-grid > div {
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--rule);
+}
+
 /* ---- Profile ----------------------------------------------------------- */
 
 .profile-summary {
   display: grid;
-  grid-template-columns: 120px minmax(0, 1fr);
-  gap: 16px;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 20px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--rule-strong);
 }
 
 .profile-image {
-  width: 120px;
-  height: 120px;
-  border: 1px solid var(--rule);
+  width: 96px;
+  height: 96px;
+  border: 1px solid var(--rule-strong);
   background: var(--paper-rule);
   object-fit: cover;
 }
@@ -439,7 +570,7 @@ tr:hover td {
 
 .list {
   display: grid;
-  gap: 12px;
+  gap: 8px;
   padding: 0;
   margin: 0;
   list-style: none;
@@ -453,7 +584,7 @@ tr:hover td {
 
 .list.divided li {
   border-bottom: 1px solid var(--rule);
-  padding: 14px;
+  padding: 12px;
   transition: background-color 80ms ease-out;
 }
 
@@ -470,18 +601,23 @@ tr:hover td {
 .feature-card {
   border: 1px solid var(--rule);
   background: var(--paper);
-  padding: 16px;
+  padding: 14px;
+  transition: border-color 80ms ease-out;
+}
+
+.feature-card:hover {
+  border-color: var(--rule-strong);
 }
 
 .feature-inner {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 88px;
-  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) 72px;
+  gap: 14px;
 }
 
 .vote-button {
   display: flex;
-  min-height: 72px;
+  min-height: 64px;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -490,6 +626,11 @@ tr:hover td {
   color: var(--ink);
   cursor: pointer;
   border-radius: 0;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   transition: background-color 80ms ease-out, color 80ms ease-out, border-color 80ms ease-out;
 }
 
@@ -504,7 +645,7 @@ tr:hover td {
 }
 
 .vote-count {
-  font-size: 1.3125rem;
+  font-size: 1.125rem;
   font-weight: 600;
   line-height: 1.2;
 }
@@ -517,13 +658,18 @@ tr:hover td {
 }
 
 .segmented button {
-  min-height: 36px;
+  min-height: 32px;
   border: 0;
   border-right: 1px solid var(--rule);
   background: var(--paper);
-  padding: 0 12px;
+  padding: 0 10px;
   cursor: pointer;
-  font-size: 0.875rem;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
   transition: background-color 80ms ease-out, color 80ms ease-out;
 }
 
@@ -533,6 +679,7 @@ tr:hover td {
 
 .segmented button:hover {
   background: var(--paper-rule);
+  color: var(--ink);
 }
 
 .segmented button.active {
@@ -540,10 +687,76 @@ tr:hover td {
   color: var(--paper);
 }
 
+/* ---- Badges ------------------------------------------------------------ */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid var(--rule);
+  background: var(--paper-rule);
+  color: var(--ink-soft);
+}
+
+.badge-live {
+  border-color: var(--plotter-blue);
+  background: var(--plotter-blue-tint);
+  color: var(--plotter-blue);
+}
+
+.badge-warn {
+  border-color: var(--amber);
+  background: var(--amber-tint);
+  color: var(--ink);
+}
+
+/* ---- Loading skeleton --------------------------------------------------- */
+
+.skeleton {
+  display: inline-block;
+  background: var(--paper-rule);
+  color: transparent;
+  border-radius: 0;
+  position: relative;
+  overflow: hidden;
+  min-width: 4ch;
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, var(--paper), transparent);
+  animation: shimmer 1.5s ease-out infinite;
+}
+
+@keyframes shimmer {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+
+.loading-bar {
+  height: 2px;
+  background: var(--ink);
+  animation: load-progress 1.2s ease-out infinite;
+  transform-origin: left;
+}
+
+@keyframes load-progress {
+  0% { transform: scaleX(0); opacity: 1; }
+  50% { transform: scaleX(0.6); opacity: 1; }
+  100% { transform: scaleX(1); opacity: 0; }
+}
+
 /* ---- Utilities ---------------------------------------------------------- */
 
 .muted {
-  color: var(--ink-soft);
+  color: var(--ink-mute);
 }
 
 .small {
@@ -554,6 +767,10 @@ tr:hover td {
   font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
   font-size: 0.8125rem;
   line-height: 1.4;
+}
+
+.nowrap {
+  white-space: nowrap;
 }
 
 /* ---- Motion ------------------------------------------------------------ */
@@ -576,15 +793,49 @@ tr:hover td {
 
   .sidebar {
     border-right: 0;
-    border-bottom: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule-strong);
+    height: auto;
+    position: static;
+    padding: 12px 16px;
+  }
+
+  .brand {
+    margin-bottom: 8px;
   }
 
   .nav {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .nav-group-label {
+    grid-column: 1 / -1;
+  }
+
+  .nav-link {
+    border-left-width: 0;
+    border-bottom: 2px solid transparent;
+  }
+
+  .nav-link.active {
+    border-left-color: transparent;
+    border-bottom-color: var(--ink);
+  }
+
+  .sidebar-auth {
+    margin-top: 8px;
+  }
+
+  .schematic-header,
+  .page-title {
+    padding: 12px 16px 8px;
+  }
+
   .content {
-    padding: 20px;
+    padding: 0;
+  }
+
+  .page-body {
+    padding: 16px;
   }
 
   .page-title {
@@ -599,5 +850,9 @@ tr:hover td {
   .profile-summary,
   .feature-inner {
     grid-template-columns: 1fr;
+  }
+
+  .wide-board {
+    grid-template-rows: auto;
   }
 }

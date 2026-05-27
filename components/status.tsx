@@ -13,7 +13,7 @@ export function PageTitle({ title, aside }: { title: string; aside?: ReactNode }
 }
 
 export function LoadingLine({ loading }: { loading: boolean }) {
-  return loading ? <p className="small muted">Loading...</p> : null;
+  return loading ? <div className="loading-bar" /> : null;
 }
 
 export function ErrorBlock({ error }: { error: ApiError | null }) {
@@ -37,5 +37,13 @@ export function DataCount({ pagination, fallback }: { pagination: Pagination | n
   if (total === null || total === undefined) {
     return null;
   }
-  return <span>{total} total</span>;
+  return (
+    <span>
+      {total} found
+    </span>
+  );
+}
+
+export function Badge({ children, variant }: { children: ReactNode; variant?: "live" | "warn" }) {
+  return <span className={`badge${variant ? ` badge-${variant}` : ""}`}>{children}</span>;
 }

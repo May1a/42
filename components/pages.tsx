@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { ButtonLink, PlainButton, SelectField, TextAreaField, TextField } from "./forms";
-import { DataCount, EmptyState, ErrorBlock, LoadingLine, PageTitle } from "./status";
+import { Badge, DataCount, EmptyState, ErrorBlock, LoadingLine, PageTitle } from "./status";
 import { loginHref, RequireSession } from "./AppShell";
 import { useApiResource } from "@/lib/use-api-resource";
 import { removeStorage } from "@/lib/forty-two-client";
@@ -99,19 +99,27 @@ function ProfileSummary({ user }: { user: FortyTwoUser }) {
   const image = userImage(user);
   const campusName = primaryCampusName(user);
   const mainCursus = user.cursus_users?.find((entry) => !entry.end_at) || user.cursus_users?.[0];
+  const isOnline = Boolean(user.location);
   return (
     <div className="profile-summary">
-      {image ? <img alt="" className="profile-image" src={image} /> : <div className="profile-image" />}
-      <dl className="info-grid">
-        <Info label="Login" mono value={user.login} />
-        <Info label="Name" value={displayName(user)} />
-        <Info label="Campus" value={campusName} />
-        <Info label="Cursus" value={mainCursus?.cursus?.name || "n/a"} />
-        <Info label="Level" mono value={mainCursus?.level?.toFixed(2) || "n/a"} />
-        <Info label="Wallet" mono value={String(user.wallet ?? "n/a")} />
-        <Info label="Correction points" mono value={String(user.correction_point ?? "n/a")} />
-        <Info label="Location" value={user.location || "offline"} />
-      </dl>
+      <div>
+        {image ? <img alt="" className="profile-image" src={image} /> : <div className="profile-image" />}
+      </div>
+      <div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+          <h2 className="section-heading" style={{ margin: 0 }}>{displayName(user)}</h2>
+          {isOnline ? <Badge variant="live">online</Badge> : <Badge>offline</Badge>}
+        </div>
+        <dl className="info-grid">
+          <Info label="Login" mono value={user.login} />
+          <Info label="Campus" value={campusName} />
+          <Info label="Cursus" value={mainCursus?.cursus?.name || "n/a"} />
+          <Info label="Level" mono value={mainCursus?.level?.toFixed(2) || "n/a"} />
+          <Info label="Wallet" mono value={String(user.wallet ?? "n/a")} />
+          <Info label="Corr. points" mono value={String(user.correction_point ?? "n/a")} />
+          {user.location ? <Info label="Location" mono value={user.location} /> : null}
+        </dl>
+      </div>
     </div>
   );
 }
@@ -121,15 +129,17 @@ export function HomePage({ session }: { session: ClientSession | null }) {
   return (
     <section>
       <PageTitle title="My 42" aside={session && !sessionExpired(session) ? <span>scope: {session.scope || "public"}</span> : <ButtonLink href={loginHref()}>Login with 42</ButtonLink>} />
-      {sessionExpired(session) ? (
-        <EmptyState>Log in to see your profile, campus, projects, evaluations, and slots.</EmptyState>
-      ) : (
-        <>
-          <LoadingLine loading={me.loading} />
-          <ErrorBlock error={me.error} />
-          {me.data ? <ProfileSummary user={me.data} /> : null}
-        </>
-      )}
+      <div className="page-body">
+        {sessionExpired(session) ? (
+          <EmptyState>Log in to see your profile, campus, projects, evaluations, and slots.</EmptyState>
+        ) : (
+          <>
+            <LoadingLine loading={me.loading} />
+            <ErrorBlock error={me.error} />
+            {me.data ? <ProfileSummary user={me.data} /> : null}
+          </>
+        )}
+      </div>
     </section>
   );
 }
@@ -148,27 +158,29 @@ export function DashboardPage({ session }: { session: ClientSession | null }) {
   return (
     <section>
       <PageTitle title="Dashboard" />
-      <RequireSession session={session}>
-        <LoadingLine loading={me.loading || locations.loading || events.loading} />
-        <ErrorBlock error={me.error || locations.error || events.error} />
-        {me.data && !campusId ? <EmptyState>No primary campus found.</EmptyState> : null}
-        {me.data ? (
-          <div className="grid two-col">
-            <section>
-              <h2 className="section-heading">Profile</h2>
-              <ProfileSummary user={me.data} />
-            </section>
-            <section>
-              <h2 className="section-heading">Campus snapshot</h2>
-              <dl className="info-grid">
-                <Info label="Online now" value={String(locations.data?.length ?? 0)} />
-                <Info label="Upcoming events" value={String(events.data?.length ?? 0)} />
-              </dl>
-              <EventList events={events.data ?? []} compact />
-            </section>
-          </div>
-        ) : null}
-      </RequireSession>
+      <div className="page-body">
+        <RequireSession session={session}>
+          <LoadingLine loading={me.loading || locations.loading || events.loading} />
+          <ErrorBlock error={me.error || locations.error || events.error} />
+          {me.data && !campusId ? <EmptyState>No primary campus found.</EmptyState> : null}
+          {me.data ? (
+            <div className="grid two-col">
+              <section>
+                <h2 className="section-heading">Profile</h2>
+                <ProfileSummary user={me.data} />
+              </section>
+              <section>
+                <h2 className="section-heading">Campus snapshot</h2>
+                <dl className="info-grid" style={{ marginBottom: 20 }}>
+                  <Info label="Online now" mono value={String(locations.data?.length ?? 0)} />
+                  <Info label="Upcoming events" mono value={String(events.data?.length ?? 0)} />
+                </dl>
+                <EventList events={events.data ?? []} compact />
+              </section>
+            </div>
+          ) : null}
+        </RequireSession>
+      </div>
     </section>
   );
 }
@@ -232,47 +244,49 @@ export function StudentsPage({ session }: { session: ClientSession | null }) {
   return (
     <section>
       <PageTitle title="Students" aside={<DataCount pagination={students.pagination} fallback={rows.length} />} />
-      <RequireSession session={session}>
-        <div className="panel filter-grid">
-          <TextField label="Search" placeholder="login or name" value={query} onInput={setQuery} />
-          <SelectField label="Campus" value={campusId} onChange={setCampusId}>
-            <option value="">All campuses</option>
-            {(campuses.data ?? []).map((campus) => (
-              <option key={campus.id} value={campus.id}>
-                {campus.name}
-              </option>
-            ))}
-          </SelectField>
-          <SelectField label="Cursus" value={cursusId} onChange={setCursusId}>
-            <option value="">All cursus</option>
-            {(cursus.data ?? []).map((entry) => (
-              <option key={entry.id} value={entry.id}>
-                {entry.name}
-              </option>
-            ))}
-          </SelectField>
-          <SelectField label="Sort" value={sort} onChange={setSort}>
-            <option value="login">Login</option>
-            <option value="first_name">First name</option>
-            <option value="last_name">Last name</option>
-            <option value="-id">Newest</option>
-          </SelectField>
-          <TextField label="Level min" type="number" value={levelMin} onInput={setLevelMin} />
-          <TextField label="Level max" type="number" value={levelMax} onInput={setLevelMax} />
-          <TextField label="Kickoff after" type="date" value={beginAfter} onInput={setBeginAfter} />
-          <TextField label="Kickoff before" type="date" value={beginBefore} onInput={setBeginBefore} />
-          <label className="field">
-            <span>Online only</span>
-            <input checked={onlineOnly} type="checkbox" onChange={(event) => setOnlineOnly(event.currentTarget.checked)} />
-          </label>
-          <div style={{ display: "flex", alignItems: "end" }}>
-            <PlainButton onClick={clearFilters}>Clear filters</PlainButton>
+      <div className="page-body">
+        <RequireSession session={session}>
+          <div className="panel filter-grid">
+            <TextField label="Search" placeholder="login or name" value={query} onInput={setQuery} />
+            <SelectField label="Campus" value={campusId} onChange={setCampusId}>
+              <option value="">All campuses</option>
+              {(campuses.data ?? []).map((campus) => (
+                <option key={campus.id} value={campus.id}>
+                  {campus.name}
+                </option>
+              ))}
+            </SelectField>
+            <SelectField label="Cursus" value={cursusId} onChange={setCursusId}>
+              <option value="">All cursus</option>
+              {(cursus.data ?? []).map((entry) => (
+                <option key={entry.id} value={entry.id}>
+                  {entry.name}
+                </option>
+              ))}
+            </SelectField>
+            <SelectField label="Sort" value={sort} onChange={setSort}>
+              <option value="login">Login</option>
+              <option value="first_name">First name</option>
+              <option value="last_name">Last name</option>
+              <option value="-id">Newest</option>
+            </SelectField>
+            <TextField label="Level min" type="number" value={levelMin} onInput={setLevelMin} />
+            <TextField label="Level max" type="number" value={levelMax} onInput={setLevelMax} />
+            <TextField label="Kickoff after" type="date" value={beginAfter} onInput={setBeginAfter} />
+            <TextField label="Kickoff before" type="date" value={beginBefore} onInput={setBeginBefore} />
+            <label className="field">
+              <span>Online only</span>
+              <input checked={onlineOnly} type="checkbox" onChange={(event) => setOnlineOnly(event.currentTarget.checked)} />
+            </label>
+            <div style={{ display: "flex", alignItems: "end" }}>
+              <PlainButton onClick={clearFilters}>Clear</PlainButton>
+            </div>
           </div>
-        </div>
-        <LoadingLine loading={students.loading || campuses.loading || cursus.loading || activeLocations.loading} />
-        <ErrorBlock error={students.error || campuses.error || cursus.error || activeLocations.error} />
-        <StudentTable rows={rows} />
-      </RequireSession>
+          <LoadingLine loading={students.loading || campuses.loading || cursus.loading || activeLocations.loading} />
+          <ErrorBlock error={students.error || campuses.error || cursus.error || activeLocations.error} />
+          <StudentTable rows={rows} />
+        </RequireSession>
+      </div>
     </section>
   );
 }
@@ -301,8 +315,17 @@ function StudentTable({ rows }: { rows: StudentRow[] }) {
               </td>
               <td>{displayName(row.user)}</td>
               <td className="mono">{row.cursusUser?.level?.toFixed(2) ?? row.user.cursus_users?.[0]?.level?.toFixed(2) ?? "n/a"}</td>
-              <td className="mono">{formatDate(row.cursusUser?.begin_at ?? row.user.cursus_users?.[0]?.begin_at)}</td>
-              <td>{row.user.location || "offline"}</td>
+              <td className="mono nowrap">{formatDate(row.cursusUser?.begin_at ?? row.user.cursus_users?.[0]?.begin_at)}</td>
+              <td>
+                {row.user.location ? (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                    <Badge variant="live">online</Badge>
+                    <span className="mono small">{row.user.location}</span>
+                  </span>
+                ) : (
+                  <span className="muted small">offline</span>
+                )}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -320,23 +343,25 @@ export function ProfilePage({ session }: { session: ClientSession | null }) {
   return (
     <section>
       <PageTitle title={login || "Profile"} />
-      <RequireSession session={session}>
-        <LoadingLine loading={user.loading || projects.loading || scales.loading} />
-        <ErrorBlock error={user.error || projects.error || scales.error} />
-        {user.data ? (
-          <div className="grid">
-            <ProfileSummary user={user.data} />
-            <section>
-              <h2 className="section-heading">Projects</h2>
-              <ProjectUserList projects={projects.data ?? []} />
-            </section>
-            <section>
-              <h2 className="section-heading">Evaluations</h2>
-              <ScaleTeamList teams={scales.data ?? []} />
-            </section>
-          </div>
-        ) : null}
-      </RequireSession>
+      <div className="page-body">
+        <RequireSession session={session}>
+          <LoadingLine loading={user.loading || projects.loading || scales.loading} />
+          <ErrorBlock error={user.error || projects.error || scales.error} />
+          {user.data ? (
+            <div className="grid" style={{ gap: 32 }}>
+              <ProfileSummary user={user.data} />
+              <section>
+                <h2 className="section-heading">Projects</h2>
+                <ProjectUserList projects={projects.data ?? []} />
+              </section>
+              <section>
+                <h2 className="section-heading">Evaluations</h2>
+                <ScaleTeamList teams={scales.data ?? []} />
+              </section>
+            </div>
+          ) : null}
+        </RequireSession>
+      </div>
     </section>
   );
 }
@@ -375,27 +400,30 @@ export function LocationsPage({ session }: { session: ClientSession | null }) {
         title="Locations"
         aside={
           <>
+            <span className="nowrap">{filtered.length} online</span>
             <PlainButton onClick={() => setRefreshKey((value) => value + 1)}>Refresh</PlainButton>
-            <PlainButton onClick={() => setAutoRefresh(autoRefresh === "on" ? "off" : "on")}>{autoRefresh === "on" ? "Auto on" : "Auto off"}</PlainButton>
+            <PlainButton onClick={() => setAutoRefresh(autoRefresh === "on" ? "off" : "on")}>{autoRefresh === "on" ? "Auto: on" : "Auto: off"}</PlainButton>
           </>
         }
       />
-      <RequireSession session={session}>
-        <div className="panel filter-grid">
-          <SelectField label="Campus" value={campusId} onChange={setCampusId}>
-            <option value="">Primary campus</option>
-            {(campuses.data ?? []).map((campus) => (
-              <option key={campus.id} value={campus.id}>
-                {campus.name}
-              </option>
-            ))}
-          </SelectField>
-          <TextField label="Search" placeholder="login, name, host" value={query} onInput={setQuery} />
-        </div>
-        <LoadingLine loading={me.loading || campuses.loading || locations.loading} />
-        <ErrorBlock error={me.error || campuses.error || locations.error} />
-        {!effectiveCampusId && !me.loading ? <EmptyState>No primary campus found.</EmptyState> : <LocationTable locations={filtered} />}
-      </RequireSession>
+      <div className="page-body">
+        <RequireSession session={session}>
+          <div className="panel filter-grid">
+            <SelectField label="Campus" value={campusId} onChange={setCampusId}>
+              <option value="">Primary campus</option>
+              {(campuses.data ?? []).map((campus) => (
+                <option key={campus.id} value={campus.id}>
+                  {campus.name}
+                </option>
+              ))}
+            </SelectField>
+            <TextField label="Search" placeholder="login, name, host" value={query} onInput={setQuery} />
+          </div>
+          <LoadingLine loading={me.loading || campuses.loading || locations.loading} />
+          <ErrorBlock error={me.error || campuses.error || locations.error} />
+          {!effectiveCampusId && !me.loading ? <EmptyState>No primary campus found.</EmptyState> : <LocationTable locations={filtered} />}
+        </RequireSession>
+      </div>
     </section>
   );
 }
@@ -419,7 +447,7 @@ function LocationTable({ locations }: { locations: Location[] }) {
             <tr key={location.id}>
               <td className="mono">{location.user?.login ? <Link href={`/students/${location.user.login}`}>{location.user.login}</Link> : "Unknown"}</td>
               <td className="mono">{location.host}</td>
-              <td className="mono">{formatDateTime(location.begin_at)}</td>
+              <td className="mono nowrap">{formatDateTime(location.begin_at)}</td>
             </tr>
           ))}
         </tbody>
@@ -443,21 +471,23 @@ export function EventsPage({ session }: { session: ClientSession | null }) {
   return (
     <section>
       <PageTitle title="Events" aside={<DataCount pagination={events.pagination} fallback={events.data?.length} />} />
-      <RequireSession session={session}>
-        <div className="panel">
-          <SelectField label="Campus" value={campusId} onChange={setCampusId}>
-            <option value="">Primary campus</option>
-            {(campuses.data ?? []).map((campus) => (
-              <option key={campus.id} value={campus.id}>
-                {campus.name}
-              </option>
-            ))}
-          </SelectField>
-        </div>
-        <LoadingLine loading={me.loading || campuses.loading || events.loading} />
-        <ErrorBlock error={me.error || campuses.error || events.error} />
-        {!effectiveCampusId && !me.loading ? <EmptyState>No primary campus found.</EmptyState> : <EventList events={events.data ?? []} />}
-      </RequireSession>
+      <div className="page-body">
+        <RequireSession session={session}>
+          <div className="panel">
+            <SelectField label="Campus" value={campusId} onChange={setCampusId}>
+              <option value="">Primary campus</option>
+              {(campuses.data ?? []).map((campus) => (
+                <option key={campus.id} value={campus.id}>
+                  {campus.name}
+                </option>
+              ))}
+            </SelectField>
+          </div>
+          <LoadingLine loading={me.loading || campuses.loading || events.loading} />
+          <ErrorBlock error={me.error || campuses.error || events.error} />
+          {!effectiveCampusId && !me.loading ? <EmptyState>No primary campus found.</EmptyState> : <EventList events={events.data ?? []} />}
+        </RequireSession>
+      </div>
     </section>
   );
 }
@@ -470,12 +500,12 @@ function EventList({ events, compact = false }: { events: FortyTwoEvent[]; compa
     <ul className="list divided">
       {events.map((event) => (
         <li key={event.id}>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
             <div>
-              <strong>{event.name}</strong>
+              <strong style={{ fontSize: "0.8125rem" }}>{event.name}</strong>
               <p className="small muted mono">{formatDateTime(event.begin_at)}</p>
             </div>
-            {event.kind ? <span className="small muted">{event.kind}</span> : null}
+            {event.kind ? <Badge>{event.kind}</Badge> : null}
           </div>
           {!compact && event.location ? <p className="small muted">{event.location}</p> : null}
         </li>
@@ -490,13 +520,24 @@ export function ProjectsPage({ session }: { session: ClientSession | null }) {
   return (
     <section>
       <PageTitle title="Projects" aside={<DataCount pagination={projects.pagination} fallback={projects.data?.length} />} />
-      <RequireSession session={session}>
-        <LoadingLine loading={me.loading || projects.loading} />
-        <ErrorBlock error={me.error || projects.error} />
-        <ProjectUserList projects={projects.data ?? []} />
-      </RequireSession>
+      <div className="page-body">
+        <RequireSession session={session}>
+          <LoadingLine loading={me.loading || projects.loading} />
+          <ErrorBlock error={me.error || projects.error} />
+          <ProjectUserList projects={projects.data ?? []} />
+        </RequireSession>
+      </div>
     </section>
   );
+}
+
+function statusBadge(status: string | undefined | null) {
+  if (!status) return "n/a";
+  const s = status.toLowerCase();
+  if (s === "finished" || s === "validated") return <Badge variant="live">{s}</Badge>;
+  if (s === "failed" || s === "in_progress" || s === "searching_for_a_team") return <Badge>{s}</Badge>;
+  if (s === "parent") return <Badge>{s}</Badge>;
+  return <Badge>{s}</Badge>;
 }
 
 function ProjectUserList({ projects }: { projects: ProjectUser[] }) {
@@ -518,9 +559,9 @@ function ProjectUserList({ projects }: { projects: ProjectUser[] }) {
           {projects.map((projectUser) => (
             <tr key={projectUser.id}>
               <td>{projectUser.project?.id ? <Link href={`/projects/${projectUser.project.id}`}>{projectUser.project.name}</Link> : projectUser.project?.name || "Unknown"}</td>
-              <td>{projectUser.status || "n/a"}</td>
+              <td>{statusBadge(projectUser.status)}</td>
               <td className="mono">{projectUser.final_mark ?? "n/a"}</td>
-              <td className="mono">{formatDateTime(projectUser.updated_at)}</td>
+              <td className="mono nowrap">{formatDateTime(projectUser.updated_at)}</td>
             </tr>
           ))}
         </tbody>
@@ -534,19 +575,21 @@ export function ProjectDetailPage({ session }: { session: ClientSession | null }
   const project = useApiResource<Project>(session, id ? `/projects/${encodeURIComponent(id)}` : null, {}, REFERENCE_TTL);
   return (
     <section>
-      <PageTitle title="Project" />
-      <RequireSession session={session}>
-        <LoadingLine loading={project.loading} />
-        <ErrorBlock error={project.error} />
-        {project.data ? (
-          <dl className="info-grid">
-            <Info label="Name" value={project.data.name} />
-            <Info label="Slug" value={project.data.slug || "n/a"} />
-            <Info label="Difficulty" value={String(project.data.difficulty ?? "n/a")} />
-            <Info label="ID" value={String(project.data.id)} />
-          </dl>
-        ) : null}
-      </RequireSession>
+      <PageTitle title={project.data?.name || "Project"} />
+      <div className="page-body">
+        <RequireSession session={session}>
+          <LoadingLine loading={project.loading} />
+          <ErrorBlock error={project.error} />
+          {project.data ? (
+            <dl className="info-grid">
+              <Info label="Name" value={project.data.name} />
+              <Info label="Slug" mono value={project.data.slug || "n/a"} />
+              <Info label="Difficulty" value={String(project.data.difficulty ?? "n/a")} />
+              <Info label="ID" mono value={String(project.data.id)} />
+            </dl>
+          ) : null}
+        </RequireSession>
+      </div>
     </section>
   );
 }
@@ -562,19 +605,21 @@ export function EvaluationsPage({ session }: { session: ClientSession | null }) 
         aside={
           <div className="segmented">
             <button className={tab === "corrected" ? "active" : ""} type="button" onClick={() => setTab("corrected")}>
-              To be evaluated
+              Corrected
             </button>
             <button className={tab === "corrector" ? "active" : ""} type="button" onClick={() => setTab("corrector")}>
-              I am evaluating
+              Corrector
             </button>
           </div>
         }
       />
-      <RequireSession session={session}>
-        <LoadingLine loading={teams.loading} />
-        <ErrorBlock error={teams.error} />
-        <ScaleTeamList teams={teams.data ?? []} />
-      </RequireSession>
+      <div className="page-body">
+        <RequireSession session={session}>
+          <LoadingLine loading={teams.loading} />
+          <ErrorBlock error={teams.error} />
+          <ScaleTeamList teams={teams.data ?? []} />
+        </RequireSession>
+      </div>
     </section>
   );
 }
@@ -587,10 +632,16 @@ function ScaleTeamList({ teams }: { teams: ScaleTeam[] }) {
     <ul className="list divided">
       {teams.map((team) => (
         <li key={team.id}>
-          <strong>{team.team?.name || team.scale?.name || `Scale team ${team.id}`}</strong>
-          <p className="small muted mono">{formatDateTime(team.begin_at)}</p>
-          <p className="small muted">Corrector: <span className="mono">{team.corrector?.login || "n/a"}</span></p>
-          <p className="small muted">Correcteds: <span className="mono">{(team.correcteds ?? []).map((user) => user.login || user.id).join(", ") || "n/a"}</span></p>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
+            <strong style={{ fontSize: "0.8125rem" }}>{team.team?.name || team.scale?.name || `Scale team ${team.id}`}</strong>
+            <span className="mono small muted nowrap">{formatDateTime(team.begin_at)}</span>
+          </div>
+          <div className="small muted" style={{ marginTop: 4 }}>
+            Corrector: <span className="mono">{team.corrector?.login || "n/a"}</span>
+          </div>
+          <div className="small muted">
+            Correcteds: <span className="mono">{(team.correcteds ?? []).map((user) => user.login || user.id).join(", ") || "n/a"}</span>
+          </div>
         </li>
       ))}
     </ul>
@@ -613,12 +664,14 @@ export function SlotsPage({ session }: { session: ClientSession | null }) {
           </>
         }
       />
-      <RequireSession session={session}>
-        {!hasProjectsScope ? <div className="warning small">Your token does not list the projects scope. Slot reads may be restricted.</div> : null}
-        <LoadingLine loading={slots.loading} />
-        <ErrorBlock error={slots.error} />
-        <SlotList slots={slots.data ?? []} />
-      </RequireSession>
+      <div className="page-body">
+        <RequireSession session={session}>
+          {!hasProjectsScope ? <div className="warning small">Your token does not list the projects scope. Slot reads may be restricted.</div> : null}
+          <LoadingLine loading={slots.loading} />
+          <ErrorBlock error={slots.error} />
+          <SlotList slots={slots.data ?? []} />
+        </RequireSession>
+      </div>
     </section>
   );
 }
@@ -640,9 +693,9 @@ function SlotList({ slots }: { slots: Slot[] }) {
         <tbody>
           {slots.map((slot) => (
             <tr key={slot.id}>
-              <td>{formatDateTime(slot.begin_at)}</td>
-              <td>{formatDateTime(slot.end_at)}</td>
-              <td>{slot.scale_team ? "yes" : "no"}</td>
+              <td className="mono nowrap">{formatDateTime(slot.begin_at)}</td>
+              <td className="mono nowrap">{formatDateTime(slot.end_at)}</td>
+              <td>{slot.scale_team ? <Badge variant="live">booked</Badge> : <Badge>open</Badge>}</td>
             </tr>
           ))}
         </tbody>
@@ -753,36 +806,38 @@ export function FeatureIdeasPage({ session }: { session: ClientSession | null })
           </>
         }
       />
-      <RequireSession session={session}>
-        <div className="grid wide-board">
-          <form className="panel panel-muted form-grid" onSubmit={submitFeature}>
-            <h2 className="section-heading">Propose an idea</h2>
-            <TextField label="Title" placeholder="Example: peer finder filters" value={title} onInput={setTitle} />
-            <TextAreaField label="Details" placeholder="What would make this useful?" value={details} onInput={setDetails} />
-            {formError ? <p className="small" style={{ color: "var(--vermillion)" }}>{formError}</p> : null}
-            <button className="button-primary" disabled={!cleanTitle || saving} type="submit">
-              {saving ? "Saving..." : "Submit idea"}
-            </button>
-          </form>
-          <section>
-            <div style={{ alignItems: "center", display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
-              <h2 className="section-heading" style={{ margin: 0 }}>
-                Interest board
-              </h2>
-              <div className="segmented">
-                <button className={sort === "popular" ? "active" : ""} type="button" onClick={() => setSort("popular")}>
-                  Popular
-                </button>
-                <button className={sort === "newest" ? "active" : ""} type="button" onClick={() => setSort("newest")}>
-                  Newest
-                </button>
+      <div className="page-body">
+        <RequireSession session={session}>
+          <div className="grid wide-board">
+            <form className="panel panel-muted form-grid" onSubmit={submitFeature}>
+              <h2 className="section-heading">Propose an idea</h2>
+              <TextField label="Title" placeholder="Example: peer finder filters" value={title} onInput={setTitle} />
+              <TextAreaField label="Details" placeholder="What would make this useful?" value={details} onInput={setDetails} />
+              {formError ? <p className="small" style={{ color: "var(--vermillion)" }}>{formError}</p> : null}
+              <button className="button-primary" disabled={!cleanTitle || saving} type="submit">
+                {saving ? "Saving..." : "Submit idea"}
+              </button>
+            </form>
+            <section>
+              <div style={{ alignItems: "center", display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
+                <h2 className="section-heading" style={{ margin: 0 }}>
+                  Interest board
+                </h2>
+                <div className="segmented">
+                  <button className={sort === "popular" ? "active" : ""} type="button" onClick={() => setSort("popular")}>
+                    Popular
+                  </button>
+                  <button className={sort === "newest" ? "active" : ""} type="button" onClick={() => setSort("newest")}>
+                    Newest
+                  </button>
+                </div>
               </div>
-            </div>
-            <LoadingLine loading={loading} />
-            <FeatureList features={sortedFeatures} pendingVote={pendingVote} onVote={toggleVote} />
-          </section>
-        </div>
-      </RequireSession>
+              <LoadingLine loading={loading} />
+              <FeatureList features={sortedFeatures} pendingVote={pendingVote} onVote={toggleVote} />
+            </section>
+          </div>
+        </RequireSession>
+      </div>
     </section>
   );
 }
@@ -798,10 +853,10 @@ function FeatureList({ features, pendingVote, onVote }: { features: FeaturePropo
         <li className="feature-card" key={feature.id}>
           <div className="feature-inner">
             <div>
-              <strong>{feature.title}</strong>
+              <strong style={{ fontSize: "0.8125rem" }}>{feature.title}</strong>
               {feature.details ? <p className="small muted" style={{ whiteSpace: "pre-wrap" }}>{feature.details}</p> : null}
-              <p className="small muted">
-                {feature.authorName} - {formatDateTime(feature.createdAt)}
+              <p className="small muted mono">
+                {feature.authorName} / {formatDateTime(feature.createdAt)}
               </p>
             </div>
             <button className={`vote-button ${feature.votedByMe ? "active" : ""}`} disabled={pendingVote === feature.id} type="button" onClick={() => onVote(feature)}>
@@ -820,44 +875,46 @@ export function SettingsPage({ session, onLogout }: { session: ClientSession | n
   return (
     <section>
       <PageTitle title="Settings" />
-      <div className="grid">
-        <section>
-          <h2 className="section-heading">Auth</h2>
-          <dl className="info-grid">
-            <Info label="Status" value={session && !sessionExpired(session) ? "logged in" : "logged out"} />
-            <Info label="User" value={session?.user?.login || "n/a"} />
-            <Info label="Scope" value={session?.scope || "n/a"} />
-            <Info label="Expires" value={expires} />
-            <Info label="Storage" value="HTTP-only cookie" />
-          </dl>
-          <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
-            <ButtonLink href={loginHref()}>Login with all app scopes</ButtonLink>
-            <PlainButton onClick={onLogout}>Sign out</PlainButton>
-          </div>
-        </section>
-        <section>
-          <h2 className="section-heading">42 links</h2>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <a className="button" href="https://profile.intra.42.fr" rel="noreferrer" target="_blank">
-              Profile
-            </a>
-            <a className="button" href="https://profile.intra.42.fr/slots" rel="noreferrer" target="_blank">
-              Slots
-            </a>
-            <a className="button" href="https://api.intra.42.fr/apidoc" rel="noreferrer" target="_blank">
-              API docs
-            </a>
-          </div>
-        </section>
-        <section>
-          <h2 className="section-heading">Limits and cache</h2>
-          <dl className="info-grid">
-            <Info label="42 API rate limit" value="2 requests/second, 1,200 requests/hour" />
-            <Info label="Profile cache" value="10 minutes" />
-            <Info label="Reference cache" value="24 hours" />
-            <Info label="Search cache" value="5 minutes" />
-          </dl>
-        </section>
+      <div className="page-body">
+        <div className="grid" style={{ gap: 32 }}>
+          <section>
+            <h2 className="section-heading">Auth</h2>
+            <dl className="info-grid">
+              <Info label="Status" value={session && !sessionExpired(session) ? "logged in" : "logged out"} />
+              <Info label="User" mono value={session?.user?.login || "n/a"} />
+              <Info label="Scope" value={session?.scope || "n/a"} />
+              <Info label="Expires" value={expires} />
+              <Info label="Storage" value="HTTP-only cookie" />
+            </dl>
+            <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
+              <ButtonLink href={loginHref()}>Login with all scopes</ButtonLink>
+              <PlainButton onClick={onLogout}>Sign out</PlainButton>
+            </div>
+          </section>
+          <section>
+            <h2 className="section-heading">42 links</h2>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <a className="button" href="https://profile.intra.42.fr" rel="noreferrer" target="_blank">
+                Profile
+              </a>
+              <a className="button" href="https://profile.intra.42.fr/slots" rel="noreferrer" target="_blank">
+                Slots
+              </a>
+              <a className="button" href="https://api.intra.42.fr/apidoc" rel="noreferrer" target="_blank">
+                API docs
+              </a>
+            </div>
+          </section>
+          <section>
+            <h2 className="section-heading">Limits and cache</h2>
+            <dl className="info-grid">
+              <Info label="42 API rate" value="2 req/s, 1,200 req/hr" />
+              <Info label="Profile cache" value="10 minutes" />
+              <Info label="Reference cache" value="24 hours" />
+              <Info label="Search cache" value="5 minutes" />
+            </dl>
+          </section>
+        </div>
       </div>
     </section>
   );
@@ -867,9 +924,11 @@ export function NotFoundPage() {
   return (
     <section>
       <PageTitle title="Not found" />
-      <EmptyState>This route does not exist.</EmptyState>
-      <div style={{ marginTop: 16 }}>
-        <Link href="/">Back to My 42</Link>
+      <div className="page-body">
+        <EmptyState>This route does not exist.</EmptyState>
+        <div style={{ marginTop: 16 }}>
+          <Link href="/">Back to My 42</Link>
+        </div>
       </div>
     </section>
   );
