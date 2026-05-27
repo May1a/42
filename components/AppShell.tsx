@@ -69,7 +69,7 @@ export function AppShell({ session, onLogout, children }: { session: ClientSessi
         <div className="sidebar-auth">
           {session && !expired ? (
             <div className="form-grid">
-              <span>{session.user?.login}</span>
+              <span className="mono">{session.user?.login}</span>
               <PlainButton onClick={onLogout}>Sign out</PlainButton>
             </div>
           ) : (
