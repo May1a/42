@@ -4,6 +4,11 @@ node_modules
 .next
 .env.local
 convex/_generated
+!convex/_generated/
+convex/_generated/*
+!convex/_generated/ai/
+convex/_generated/ai/*
+!convex/_generated/ai/guidelines.md
 tsconfig.tsbuildinfo
 tmp/
 migrations/raw/
