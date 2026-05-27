@@ -17,10 +17,17 @@ export const list = query({
     const identity = await ctx.auth.getUserIdentity();
     const voter42Id = identity?.subject;
     const proposals = await ctx.db.query("featureProposals").withIndex("by_createdAt").order("desc").collect();
+    const votes = await ctx.db.query("featureVotes").collect();
+    const votesByProposal = new Map<Id<"featureProposals">, typeof votes>();
+    for (const vote of votes) {
+      const proposalVotes = votesByProposal.get(vote.proposalId) ?? [];
+      proposalVotes.push(vote);
+      votesByProposal.set(vote.proposalId, proposalVotes);
+    }
     const rows: FeatureProposal[] = [];
 
     for (const proposal of proposals) {
-      const votes = await ctx.db.query("featureVotes").withIndex("by_proposal", (q) => q.eq("proposalId", proposal._id)).collect();
+      const proposalVotes = votesByProposal.get(proposal._id) ?? [];
       rows.push({
         id: proposal._id,
         title: proposal.title,
@@ -28,8 +35,8 @@ export const list = query({
         authorName: proposal.authorName,
         createdAt: new Date(proposal.createdAt).toISOString(),
         updatedAt: new Date(proposal.updatedAt).toISOString(),
-        voteCount: votes.length,
-        votedByMe: Boolean(voter42Id && votes.some((vote) => vote.voter42Id === voter42Id))
+        voteCount: proposalVotes.length,
+        votedByMe: Boolean(voter42Id && proposalVotes.some((vote) => vote.voter42Id === voter42Id))
       });
     }
 

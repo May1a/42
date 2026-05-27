@@ -727,9 +727,16 @@ export function FeatureIdeasPage({ session }: { session: ClientSession | null })
 
   async function toggleVote(feature: FeatureProposal) {
     setPendingVote(feature.id);
+    setFormError("");
     try {
-      await fetch(`/api/features/${feature.id}/vote`, { method: feature.votedByMe ? "DELETE" : "POST" });
+      const response = await fetch(`/api/features/${feature.id}/vote`, { method: feature.votedByMe ? "DELETE" : "POST" });
+      if (!response.ok) {
+        const body = (await response.json().catch(() => ({}))) as { message?: string };
+        throw new Error(body.message || "Could not update your vote.");
+      }
       await loadFeatures();
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : "Could not update your vote.");
     } finally {
       setPendingVote("");
     }

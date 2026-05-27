@@ -34,6 +34,8 @@ export function useSession() {
     try {
       const response = await fetch("/api/auth/session", { cache: "no-store" });
       setSession(response.ok ? ((await response.json()) as ClientSession) : loggedOutSession);
+    } catch {
+      setSession(loggedOutSession);
     } finally {
       setLoading(false);
     }
@@ -44,8 +46,11 @@ export function useSession() {
   }, [refresh]);
 
   async function logout() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    setSession(loggedOutSession);
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } finally {
+      setSession(loggedOutSession);
+    }
   }
 
   return { session, loading, refresh, logout };

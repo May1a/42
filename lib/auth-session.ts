@@ -33,7 +33,7 @@ export async function sealSession(session: ServerAuthSession) {
   return new EncryptJWT(session as unknown as Record<string, unknown>)
     .setProtectedHeader({ alg: "dir", enc: "A256GCM" })
     .setIssuedAt()
-    .setExpirationTime(Math.max(60, Math.floor((session.expiresAt - Date.now()) / 1000)))
+    .setExpirationTime(Math.floor(session.expiresAt / 1000))
     .encrypt(sessionSecret());
 }
 

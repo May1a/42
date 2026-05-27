@@ -1,4 +1,4 @@
-import { SignJWT, exportJWK, importJWK } from "jose";
+import { SignJWT, importJWK } from "jose";
 import type { JWK } from "jose";
 import type { ServerAuthSession } from "./auth-session";
 
@@ -10,6 +10,11 @@ function parseJwkEnv(name: string) {
     throw new Error(`${name} must be set to a JSON Web Key.`);
   }
   return JSON.parse(raw) as JWK;
+}
+
+function publicOnlyJwk(jwk: JWK) {
+  const privateFields = new Set(["d", "p", "q", "dp", "dq", "qi", "oth", "k"]);
+  return Object.fromEntries(Object.entries(jwk).filter(([key]) => !privateFields.has(key))) as JWK;
 }
 
 export function jwtIssuer() {
@@ -25,9 +30,7 @@ export async function publicJwk() {
     return parseJwkEnv("AUTH_JWT_PUBLIC_JWK");
   }
 
-  const privateJwk = parseJwkEnv("AUTH_JWT_PRIVATE_KEY");
-  const key = await importJWK(privateJwk, privateJwk.alg || "ES256");
-  return exportJWK(key);
+  return publicOnlyJwk(parseJwkEnv("AUTH_JWT_PRIVATE_KEY"));
 }
 
 export async function signConvexToken(session: ServerAuthSession) {

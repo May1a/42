@@ -4,6 +4,12 @@ import { FORTY_TWO_API_BASE, FORTY_TWO_OAUTH_TOKEN } from "@/lib/forty-two-api";
 import { originForRequest, safeReturnTo } from "@/lib/http";
 import { displayName, userImage, type FortyTwoUser } from "@/shared/forty-two";
 
+const UPSTREAM_TIMEOUT_MS = 10_000;
+
+async function fetch42(input: string, init: RequestInit) {
+  return fetch(input, { ...init, signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) });
+}
+
 function parseOAuthCookie(value: string | undefined) {
   if (!value) {
     return null;
@@ -58,14 +64,21 @@ export async function GET(request: NextRequest) {
   tokenBody.set("code", code);
   tokenBody.set("redirect_uri", `${origin}/api/auth/callback`);
 
-  const tokenResponse = await fetch(FORTY_TWO_OAUTH_TOKEN, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/x-www-form-urlencoded"
-    },
-    body: tokenBody.toString()
-  });
+  let tokenResponse: Response;
+  try {
+    tokenResponse = await fetch42(FORTY_TWO_OAUTH_TOKEN, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: tokenBody.toString()
+    });
+  } catch {
+    const response = new NextResponse("42 token exchange timed out or could not be reached.", { status: 502 });
+    clearOAuthCookie(response);
+    return response;
+  }
 
   if (!tokenResponse.ok) {
     const response = new NextResponse(`42 token exchange failed with HTTP ${tokenResponse.status}.`, { status: 502 });
@@ -81,12 +94,19 @@ export async function GET(request: NextRequest) {
     return response;
   }
 
-  const meResponse = await fetch(`${FORTY_TWO_API_BASE}/me`, {
-    headers: {
-      Accept: "application/json",
-      Authorization: `Bearer ${accessToken}`
-    }
-  });
+  let meResponse: Response;
+  try {
+    meResponse = await fetch42(`${FORTY_TWO_API_BASE}/me`, {
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+  } catch {
+    const response = new NextResponse("42 profile lookup timed out or could not be reached.", { status: 502 });
+    clearOAuthCookie(response);
+    return response;
+  }
   if (!meResponse.ok) {
     const response = new NextResponse(`42 profile lookup failed with HTTP ${meResponse.status}.`, { status: 502 });
     clearOAuthCookie(response);

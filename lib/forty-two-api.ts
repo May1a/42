@@ -10,6 +10,15 @@ export function cleanUpstreamPath(path: string | null) {
   if (!value || !value.startsWith("/") || value.startsWith("//") || value.includes("://") || value.includes("?") || value.includes("#")) {
     return null;
   }
+
+  try {
+    if (value.split("/").some((segment) => decodeURIComponent(segment) === "..")) {
+      return null;
+    }
+  } catch {
+    return null;
+  }
+
   return value;
 }
 
@@ -52,7 +61,7 @@ export async function proxyTo42(request: NextRequest, accessToken: string) {
     if (contentType) {
       headers["Content-Type"] = contentType;
     }
-    init.body = await request.text();
+    init.body = await request.arrayBuffer();
   }
 
   try {

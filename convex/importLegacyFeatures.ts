@@ -1,6 +1,12 @@
 import { v } from "convex/values";
 import { internalMutation } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import { cleanDisplayName, cleanFeatureDetails, cleanFeatureTitle } from "../shared/features";
+
+function parseTimestamp(value: string, fallback?: number) {
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? (fallback ?? Date.now()) : parsed;
+}
 
 export const importRows = internalMutation({
   args: {
@@ -25,9 +31,10 @@ export const importRows = internalMutation({
     )
   },
   handler: async (ctx, args) => {
-    const idMap = new Map<string, string>();
+    const idMap = new Map<string, Id<"featureProposals">>();
 
     for (const proposal of args.proposals) {
+      const createdAt = parseTimestamp(proposal.createdAt);
       const existing = await ctx.db
         .query("featureProposals")
         .withIndex("by_legacyLakebedId", (q) => q.eq("legacyLakebedId", proposal.id))
@@ -38,8 +45,8 @@ export const importRows = internalMutation({
           title: cleanFeatureTitle(proposal.title),
           details: cleanFeatureDetails(proposal.details),
           authorName: cleanDisplayName(proposal.authorName || "Imported"),
-          createdAt: Date.parse(proposal.createdAt) || Date.now(),
-          updatedAt: Date.parse(proposal.updatedAt) || Date.parse(proposal.createdAt) || Date.now(),
+          createdAt,
+          updatedAt: parseTimestamp(proposal.updatedAt, createdAt),
           legacyLakebedId: proposal.id,
           legacyLakebedAuthorId: proposal.authorId
         }));
@@ -64,7 +71,7 @@ export const importRows = internalMutation({
       if (vote.voterId) {
         const duplicate = await ctx.db
           .query("featureVotes")
-          .withIndex("by_proposal", (q) => q.eq("proposalId", proposalId as never))
+          .withIndex("by_proposal", (q) => q.eq("proposalId", proposalId))
           .filter((q) => q.eq(q.field("legacyLakebedVoterId"), vote.voterId))
           .first();
         if (duplicate) {
@@ -73,8 +80,8 @@ export const importRows = internalMutation({
       }
 
       await ctx.db.insert("featureVotes", {
-        proposalId: proposalId as never,
-        createdAt: Date.parse(vote.createdAt) || Date.now(),
+        proposalId,
+        createdAt: parseTimestamp(vote.createdAt),
         legacyLakebedId: vote.id,
         legacyLakebedVoterId: vote.voterId
       });

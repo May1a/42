@@ -27,7 +27,7 @@ body {
 body {
   background: var(--background);
   color: var(--ink);
-  font-family: ui-monospace, "SFMono-Regular", "Cascadia Mono", "Liberation Mono", Menlo, monospace;
+  font-family: ui-monospace, SFMono-Regular, Cascadia Mono, Liberation Mono, Menlo, monospace;
 }
 
 a {
