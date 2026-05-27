@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import type { ApiError, Pagination } from "@/shared/forty-two";
 import type { ClientSession } from "./use-session";
 import { sessionExpired } from "./use-session";
-import { buildProxyUrl, enqueueApi, errorMessage, paginationFrom, parseResponseBody, readJson, writeJson, type ApiParams } from "./forty-two-client";
+import { buildProxyUrl, dedupeApi, enqueueApi, errorMessage, paginationFrom, parseResponseBody, readJson, writeJson, type ApiParams } from "./forty-two-client";
 
 const CACHE_PREFIX = "42explorer.cache.";
 
@@ -42,7 +42,7 @@ async function request42<T>(session: ClientSession, path: string, params: ApiPar
     return { data: cached.data, pagination: cached.pagination };
   }
 
-  return enqueueApi(async () => {
+  return dedupeApi(key, () => enqueueApi(async () => {
     const response = await fetch(buildProxyUrl(path, params), { credentials: "include" });
     const body = await parseResponseBody(response);
     const pagination = paginationFrom(response.headers);
@@ -58,7 +58,7 @@ async function request42<T>(session: ClientSession, path: string, params: ApiPar
     const data = body as T;
     writeCache(key, ttl, data, pagination);
     return { data, pagination };
-  });
+  }));
 }
 
 export function useApiResource<T>(session: ClientSession | null, path: string | null, params: ApiParams = {}, ttl = 0, refreshKey = 0): ApiState<T> {
@@ -91,8 +91,9 @@ export function useApiResource<T>(session: ClientSession | null, path: string | 
       };
     }
 
+    const requestParams = JSON.parse(paramsKey) as ApiParams;
     setState((previous) => ({ ...previous, error: null, loading: true }));
-    void request42<T>(session!, path, params, ttl)
+    void request42<T>(session!, path, requestParams, ttl)
       .then((result) => {
         if (active) {
           setState({ data: result.data, error: null, loading: false, pagination: result.pagination });
@@ -116,7 +117,7 @@ export function useApiResource<T>(session: ClientSession | null, path: string | 
     return () => {
       active = false;
     };
-  }, [session?.user?.id, session?.expiresAt, path, paramsKey, ttl, refreshKey]);
+  }, [session, path, paramsKey, ttl, refreshKey]);
 
   return state;
 }

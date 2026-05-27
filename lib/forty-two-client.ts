@@ -8,9 +8,10 @@ let nextAllowedApiAt = 0;
 let apiQueue: Promise<unknown> = Promise.resolve();
 let hourlyCount = 0;
 let hourlyStartedAt = 0;
-const SECOND_LIMIT = 2;
+const inFlightRequests = new Map<string, Promise<unknown>>();
 const HOUR_LIMIT = 1200;
 const HOUR_MS = 60 * 60 * 1000;
+const SECOND_SPACING_MS = 650;
 
 export function enqueueApi<T>(work: () => Promise<T>) {
   const run = apiQueue.then(async () => {
@@ -26,12 +27,27 @@ export function enqueueApi<T>(work: () => Promise<T>) {
     if (waitMs > 0) {
       await new Promise((resolve) => setTimeout(resolve, waitMs));
     }
-    nextAllowedApiAt = Date.now() + Math.ceil(1000 / SECOND_LIMIT);
+    nextAllowedApiAt = Date.now() + SECOND_SPACING_MS;
     hourlyCount += 1;
     return work();
   });
   apiQueue = run.catch(() => undefined);
   return run;
+}
+
+export function dedupeApi<T>(key: string, work: () => Promise<T>) {
+  const existing = inFlightRequests.get(key);
+  if (existing) {
+    return existing as Promise<T>;
+  }
+
+  const request = work().finally(() => {
+    if (inFlightRequests.get(key) === request) {
+      inFlightRequests.delete(key);
+    }
+  });
+  inFlightRequests.set(key, request);
+  return request;
 }
 
 export function readJson<T>(key: string): T | null {

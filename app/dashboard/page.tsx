@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { RequireSession } from "@/components/AppShell";
 import { ClientRoot } from "@/components/ClientRoot";
 import { EventList, Info, ProfileSummary } from "@/components/page-sections";
@@ -16,11 +17,12 @@ export default function Page() {
 function DashboardRoute({ session }: { session: ClientSession | null }) {
   const me = useMe(session);
   const campusId = primaryCampusId(me.data);
+  const eventRange = useMemo(() => `${new Date().toISOString()},${oneYearFromNow()}`, []);
   const locations = useApiResource<Location[]>(session, campusId ? `/campus/${campusId}/locations` : null, { "filter.active": true, "page.size": 100 }, SEARCH_TTL);
   const events = useApiResource<FortyTwoEvent[]>(
     session,
     campusId ? `/campus/${campusId}/events` : null,
-    { "page.size": 6, sort: "begin_at", "range.begin_at": `${new Date().toISOString()},${oneYearFromNow()}` },
+    { "page.size": 6, sort: "begin_at", "range.begin_at": eventRange },
     SEARCH_TTL
   );
 

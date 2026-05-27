@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { RequireSession } from "@/components/AppShell";
 import { ClientRoot } from "@/components/ClientRoot";
 import { SelectField } from "@/components/forms";
@@ -19,10 +20,11 @@ function EventsRoute({ session }: { session: ClientSession | null }) {
   const me = useMe(session);
   const [campusId, setCampusId] = useStoredString(SELECTED_CAMPUS_KEY);
   const effectiveCampusId = campusId || primaryCampusId(me.data);
+  const eventRange = useMemo(() => `${new Date().toISOString()},${oneYearFromNow()}`, []);
   const events = useApiResource<FortyTwoEvent[]>(
     session,
     effectiveCampusId ? `/campus/${effectiveCampusId}/events` : null,
-    { "page.size": 100, sort: "begin_at", "range.begin_at": `${new Date().toISOString()},${oneYearFromNow()}` },
+    { "page.size": 100, sort: "begin_at", "range.begin_at": eventRange },
     SEARCH_TTL
   );
 
