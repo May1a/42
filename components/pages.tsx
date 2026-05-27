@@ -84,11 +84,11 @@ function oneYearFromNow() {
   return date.toISOString();
 }
 
-function Info({ label, value }: { label: string; value: string }) {
+function Info({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div>
       <dt className="info-label">{label}</dt>
-      <dd className="info-value" style={{ margin: 0 }}>
+      <dd className={`info-value${mono ? " mono" : ""}`} style={{ margin: 0 }}>
         {value}
       </dd>
     </div>
@@ -103,13 +103,13 @@ function ProfileSummary({ user }: { user: FortyTwoUser }) {
     <div className="profile-summary">
       {image ? <img alt="" className="profile-image" src={image} /> : <div className="profile-image" />}
       <dl className="info-grid">
-        <Info label="Login" value={user.login} />
+        <Info label="Login" mono value={user.login} />
         <Info label="Name" value={displayName(user)} />
         <Info label="Campus" value={campusName} />
         <Info label="Cursus" value={mainCursus?.cursus?.name || "n/a"} />
-        <Info label="Level" value={mainCursus?.level?.toFixed(2) || "n/a"} />
-        <Info label="Wallet" value={String(user.wallet ?? "n/a")} />
-        <Info label="Correction points" value={String(user.correction_point ?? "n/a")} />
+        <Info label="Level" mono value={mainCursus?.level?.toFixed(2) || "n/a"} />
+        <Info label="Wallet" mono value={String(user.wallet ?? "n/a")} />
+        <Info label="Correction points" mono value={String(user.correction_point ?? "n/a")} />
         <Info label="Location" value={user.location || "offline"} />
       </dl>
     </div>
@@ -296,12 +296,12 @@ function StudentTable({ rows }: { rows: StudentRow[] }) {
         <tbody>
           {rows.map((row) => (
             <tr key={`${row.user.id}-${row.cursusUser?.id ?? "user"}`}>
-              <td>
+              <td className="mono">
                 <Link href={`/students/${row.user.login}`}>{row.user.login}</Link>
               </td>
               <td>{displayName(row.user)}</td>
-              <td>{row.cursusUser?.level?.toFixed(2) ?? row.user.cursus_users?.[0]?.level?.toFixed(2) ?? "n/a"}</td>
-              <td>{formatDate(row.cursusUser?.begin_at ?? row.user.cursus_users?.[0]?.begin_at)}</td>
+              <td className="mono">{row.cursusUser?.level?.toFixed(2) ?? row.user.cursus_users?.[0]?.level?.toFixed(2) ?? "n/a"}</td>
+              <td className="mono">{formatDate(row.cursusUser?.begin_at ?? row.user.cursus_users?.[0]?.begin_at)}</td>
               <td>{row.user.location || "offline"}</td>
             </tr>
           ))}
@@ -417,9 +417,9 @@ function LocationTable({ locations }: { locations: Location[] }) {
         <tbody>
           {locations.map((location) => (
             <tr key={location.id}>
-              <td>{location.user?.login ? <Link href={`/students/${location.user.login}`}>{location.user.login}</Link> : "Unknown"}</td>
-              <td>{location.host}</td>
-              <td>{formatDateTime(location.begin_at)}</td>
+              <td className="mono">{location.user?.login ? <Link href={`/students/${location.user.login}`}>{location.user.login}</Link> : "Unknown"}</td>
+              <td className="mono">{location.host}</td>
+              <td className="mono">{formatDateTime(location.begin_at)}</td>
             </tr>
           ))}
         </tbody>
@@ -473,7 +473,7 @@ function EventList({ events, compact = false }: { events: FortyTwoEvent[]; compa
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
             <div>
               <strong>{event.name}</strong>
-              <p className="small muted">{formatDateTime(event.begin_at)}</p>
+              <p className="small muted mono">{formatDateTime(event.begin_at)}</p>
             </div>
             {event.kind ? <span className="small muted">{event.kind}</span> : null}
           </div>
@@ -519,8 +519,8 @@ function ProjectUserList({ projects }: { projects: ProjectUser[] }) {
             <tr key={projectUser.id}>
               <td>{projectUser.project?.id ? <Link href={`/projects/${projectUser.project.id}`}>{projectUser.project.name}</Link> : projectUser.project?.name || "Unknown"}</td>
               <td>{projectUser.status || "n/a"}</td>
-              <td>{projectUser.final_mark ?? "n/a"}</td>
-              <td>{formatDateTime(projectUser.updated_at)}</td>
+              <td className="mono">{projectUser.final_mark ?? "n/a"}</td>
+              <td className="mono">{formatDateTime(projectUser.updated_at)}</td>
             </tr>
           ))}
         </tbody>
@@ -588,9 +588,9 @@ function ScaleTeamList({ teams }: { teams: ScaleTeam[] }) {
       {teams.map((team) => (
         <li key={team.id}>
           <strong>{team.team?.name || team.scale?.name || `Scale team ${team.id}`}</strong>
-          <p className="small muted">{formatDateTime(team.begin_at)}</p>
-          <p className="small muted">Corrector: {team.corrector?.login || "n/a"}</p>
-          <p className="small muted">Correcteds: {(team.correcteds ?? []).map((user) => user.login || user.id).join(", ") || "n/a"}</p>
+          <p className="small muted mono">{formatDateTime(team.begin_at)}</p>
+          <p className="small muted">Corrector: <span className="mono">{team.corrector?.login || "n/a"}</span></p>
+          <p className="small muted">Correcteds: <span className="mono">{(team.correcteds ?? []).map((user) => user.login || user.id).join(", ") || "n/a"}</span></p>
         </li>
       ))}
     </ul>
@@ -759,7 +759,7 @@ export function FeatureIdeasPage({ session }: { session: ClientSession | null })
             <h2 className="section-heading">Propose an idea</h2>
             <TextField label="Title" placeholder="Example: peer finder filters" value={title} onInput={setTitle} />
             <TextAreaField label="Details" placeholder="What would make this useful?" value={details} onInput={setDetails} />
-            {formError ? <p className="small" style={{ color: "var(--danger)" }}>{formError}</p> : null}
+            {formError ? <p className="small" style={{ color: "var(--vermillion)" }}>{formError}</p> : null}
             <button className="button-primary" disabled={!cleanTitle || saving} type="submit">
               {saving ? "Saving..." : "Submit idea"}
             </button>
