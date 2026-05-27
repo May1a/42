@@ -58,15 +58,23 @@ export const propose = mutation({
     }
 
     const now = Date.now();
-    return ctx.db.insert("featureProposals", {
+    const proposal = {
       title,
       details,
       author42Id: identity.subject,
-      authorLogin: identity.nickname,
       authorName: cleanDisplayName(identity.name || identity.nickname || identity.subject),
       createdAt: now,
       updatedAt: now
-    });
+    };
+
+    if (identity.nickname) {
+      return ctx.db.insert("featureProposals", {
+        ...proposal,
+        authorLogin: identity.nickname
+      });
+    }
+
+    return ctx.db.insert("featureProposals", proposal);
   }
 });
 

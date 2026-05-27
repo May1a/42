@@ -41,6 +41,8 @@ export async function signConvexToken(session: ServerAuthSession) {
 
   return new SignJWT({
     login: session.user.login,
+    nickname: session.user.login,
+    preferred_username: session.user.login,
     name: session.user.name,
     picture: session.user.image
   })
