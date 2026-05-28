@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react
 import { RequireSession } from "@/components/AppShell";
 import { ClientRoot } from "@/components/ClientRoot";
 import { TextAreaField, TextField } from "@/components/forms";
-import { FeatureList } from "@/components/page-sections";
+import { FeatureList, StatBar, StatItem, SectionKicker } from "@/components/page-sections";
 import { LoadingLine, PageTitle } from "@/components/status";
 import { sessionExpired, type ClientSession } from "@/lib/use-session";
 import { cleanFeatureDetails, cleanFeatureTitle, type FeatureProposal } from "@/shared/features";
@@ -108,9 +108,10 @@ function FeatureIdeasRoute({ session }: { session: ClientSession | null }) {
     <section>
       <PageTitle
         title="Feature ideas"
-        aside={
+        meta={
           <>
             <span>{features.length} ideas</span>
+            <span aria-hidden>·</span>
             <span>{totalVotes} votes</span>
           </>
         }
@@ -118,7 +119,7 @@ function FeatureIdeasRoute({ session }: { session: ClientSession | null }) {
       <div className="page-body">
         <RequireSession session={session}>
           <div className="grid wide-board">
-            <form className="panel panel-muted form-grid" onSubmit={submitFeature}>
+            <form className="panel-inset form-grid" onSubmit={submitFeature}>
               <h2 className="section-heading">Propose an idea</h2>
               <TextField label="Title" placeholder="Example: peer finder filters" value={title} onInput={setTitle} />
               <TextAreaField label="Details" placeholder="What would make this useful?" value={details} onInput={setDetails} />

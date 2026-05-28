@@ -2,7 +2,15 @@
 
 import Link from "next/link";
 import { ClientRoot } from "@/components/ClientRoot";
-import { EmptyState, PageTitle } from "@/components/status";
+import { PageTitle } from "@/components/status";
+
+const quickLinks = [
+  { href: "/", label: "My 42" },
+  { href: "/students", label: "Students" },
+  { href: "/locations", label: "Locations" },
+  { href: "/events", label: "Events" },
+  { href: "/projects", label: "Projects" },
+];
 
 export default function NotFound() {
   return (
@@ -11,9 +19,13 @@ export default function NotFound() {
         <section>
           <PageTitle title="Not found" />
           <div className="page-body">
-            <EmptyState>This route does not exist.</EmptyState>
-            <div style={{ marginTop: 16 }}>
-              <Link href="/">Back to My 42</Link>
+            <p className="small muted" style={{ marginBottom: 20 }}>This route does not exist. Try one of these:</p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {quickLinks.map((link) => (
+                <Link className="button" href={link.href} key={link.href}>
+                  {link.label}
+                </Link>
+              ))}
             </div>
           </div>
         </section>

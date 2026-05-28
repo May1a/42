@@ -3,11 +3,14 @@
 import type { ReactNode } from "react";
 import type { ApiError, Pagination } from "@/shared/forty-two";
 
-export function PageTitle({ title, aside }: { title: string; aside?: ReactNode }) {
+export function PageTitle({ title, aside, meta }: { title: string; aside?: ReactNode; meta?: ReactNode }) {
   return (
     <div className="page-title">
-      <h1>{title}</h1>
-      {aside ? <div className="page-aside">{aside}</div> : null}
+      <div className="page-title-row">
+        <h1>{title}</h1>
+        {aside ? <div className="page-aside">{aside}</div> : null}
+      </div>
+      {meta ? <div className="page-meta">{meta}</div> : null}
     </div>
   );
 }

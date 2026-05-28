@@ -62,10 +62,11 @@ function LocationsRoute({ session }: { session: ClientSession | null }) {
             <PlainButton onClick={() => setAutoRefresh(autoRefresh === "on" ? "off" : "on")}>{autoRefresh === "on" ? "Auto: on" : "Auto: off"}</PlainButton>
           </>
         }
+        meta={campusName ?? null}
       />
       <div className="page-body">
         <RequireSession session={session}>
-          <div className="panel filter-grid">
+          <div className="panel-inset filter-grid">
             <SelectField label="Campus" value={campusId} onChange={setCampusId}>
               <option value="">Primary campus</option>
               {(campuses.data ?? []).map((campus) => (
