@@ -4,8 +4,8 @@ import { useMemo, useState } from "react";
 import { RequireSession } from "@/components/AppShell";
 import { ClientRoot } from "@/components/ClientRoot";
 import { PlainButton, SelectField, TextField } from "@/components/forms";
-import { StudentTable } from "@/components/page-sections";
-import { DataCount, ErrorBlock, LoadingLine, PageTitle } from "@/components/status";
+import { StatBar, StatItem, SectionKicker, StudentTable } from "@/components/page-sections";
+import { ErrorBlock, LoadingLine, PageTitle } from "@/components/status";
 import { SELECTED_CAMPUS_KEY, SELECTED_CURSUS_KEY, SEARCH_TTL, useCampuses, useCursus, useStoredString } from "@/lib/page-data";
 import { useApiResource } from "@/lib/use-api-resource";
 import type { ClientSession } from "@/lib/use-session";
@@ -27,6 +27,7 @@ function StudentsRoute({ session }: { session: ClientSession | null }) {
   const [levelMax, setLevelMax] = useState("");
   const [beginAfter, setBeginAfter] = useState("");
   const [beginBefore, setBeginBefore] = useState("");
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const useCursusUsers = Boolean(levelMin || levelMax || beginAfter || beginBefore);
   const studentPath = useCursusUsers ? (cursusId ? `/cursus/${cursusId}/cursus_users` : "/cursus_users") : cursusId ? `/cursus/${cursusId}/users` : "/users";
   const params: Record<string, string | number | boolean | null | undefined> = { "page.number": 1, "page.size": 100, sort };
@@ -69,14 +70,28 @@ function StudentsRoute({ session }: { session: ClientSession | null }) {
     setLevelMax("");
     setBeginAfter("");
     setBeginBefore("");
+    setShowAdvanced(false);
   }
+
+  const hasActiveFilters = query || campusId || cursusId || onlineOnly || levelMin || levelMax || beginAfter || beginBefore;
+  const campusName = (campuses.data ?? []).find((c) => String(c.id) === campusId)?.name;
+  const cursusName = (cursus.data ?? []).find((c) => String(c.id) === cursusId)?.name;
 
   return (
     <section>
-      <PageTitle title="Students" aside={<DataCount pagination={students.pagination} fallback={rows.length} />} />
+      <PageTitle
+        title="Students"
+        aside={<span>{rows.length} of {students.data?.length ?? 0} found</span>}
+        meta={campusName || cursusName ? <>{[campusName, cursusName].filter(Boolean).join(" / ")}</> : null}
+      />
       <div className="page-body">
         <RequireSession session={session}>
-          <div className="panel filter-grid">
+          <StatBar>
+            <StatItem value={students.data?.length ?? 0} label="Total" />
+            <StatItem value={activeLocations.data?.length ?? 0} label="Online" />
+            <StatItem value={rows.length} label="Filtered" />
+          </StatBar>
+          <div className="panel-inset filter-grid">
             <TextField label="Search" placeholder="login or name" value={query} onInput={setQuery} />
             <SelectField label="Campus" value={campusId} onChange={setCampusId}>
               <option value="">All campuses</option>
@@ -100,18 +115,25 @@ function StudentsRoute({ session }: { session: ClientSession | null }) {
               <option value="last_name">Last name</option>
               <option value="-id">Newest</option>
             </SelectField>
-            <TextField label="Level min" type="number" value={levelMin} onInput={setLevelMin} />
-            <TextField label="Level max" type="number" value={levelMax} onInput={setLevelMax} />
-            <TextField label="Kickoff after" type="date" value={beginAfter} onInput={setBeginAfter} />
-            <TextField label="Kickoff before" type="date" value={beginBefore} onInput={setBeginBefore} />
             <label className="field">
               <span>Online only</span>
               <input checked={onlineOnly} type="checkbox" onChange={(event) => setOnlineOnly(event.currentTarget.checked)} />
             </label>
-            <div style={{ display: "flex", alignItems: "end" }}>
-              <PlainButton onClick={clearFilters}>Clear</PlainButton>
+            <div style={{ display: "flex", alignItems: "end", gap: 8 }}>
+              <PlainButton onClick={() => setShowAdvanced(!showAdvanced)}>
+                {showAdvanced ? "Less" : "More"}
+              </PlainButton>
+              {hasActiveFilters ? <PlainButton onClick={clearFilters}>Clear</PlainButton> : null}
             </div>
           </div>
+          {showAdvanced ? (
+            <div className="panel-inset filter-grid" style={{ marginTop: 12 }}>
+              <TextField label="Level min" type="number" value={levelMin} onInput={setLevelMin} />
+              <TextField label="Level max" type="number" value={levelMax} onInput={setLevelMax} />
+              <TextField label="Kickoff after" type="date" value={beginAfter} onInput={setBeginAfter} />
+              <TextField label="Kickoff before" type="date" value={beginBefore} onInput={setBeginBefore} />
+            </div>
+          ) : null}
           <LoadingLine loading={students.loading || campuses.loading || cursus.loading || activeLocations.loading} />
           <ErrorBlock error={students.error || campuses.error || cursus.error || activeLocations.error} />
           <StudentTable rows={rows} />

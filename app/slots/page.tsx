@@ -1,9 +1,10 @@
 "use client";
 
+import { useMemo } from "react";
 import { loginHref, RequireSession } from "@/components/AppShell";
 import { ClientRoot } from "@/components/ClientRoot";
 import { ButtonLink } from "@/components/forms";
-import { SlotList } from "@/components/page-sections";
+import { SectionKicker, SlotList, StatBar, StatItem } from "@/components/page-sections";
 import { ErrorBlock, LoadingLine, PageTitle } from "@/components/status";
 import { SEARCH_TTL } from "@/lib/page-data";
 import { useApiResource } from "@/lib/use-api-resource";
@@ -17,6 +18,20 @@ export default function Page() {
 function SlotsRoute({ session }: { session: ClientSession | null }) {
   const slots = useApiResource<Slot[]>(session, "/me/slots", { "page.size": 100, sort: "begin_at" }, SEARCH_TTL);
   const hasProjectsScope = Boolean(session && scopeIncludes(session.scope, "projects"));
+  const allSlots = slots.data ?? [];
+
+  const now = Date.now();
+  const weekMs = 7 * 24 * 60 * 60 * 1000;
+
+  const open = allSlots.filter((s) => !s.scale_team).length;
+  const booked = allSlots.filter((s) => !!s.scale_team).length;
+
+  const thisWeek = allSlots.filter((s) => {
+    const t = new Date(s.begin_at).getTime();
+    return t >= now && t <= now + weekMs;
+  });
+  const later = allSlots.filter((s) => new Date(s.begin_at).getTime() > now + weekMs);
+
   return (
     <section>
       <PageTitle
@@ -33,9 +48,27 @@ function SlotsRoute({ session }: { session: ClientSession | null }) {
       <div className="page-body">
         <RequireSession session={session}>
           {!hasProjectsScope ? <div className="warning small">Your token does not list the projects scope. Slot reads may be restricted.</div> : null}
+          <StatBar>
+            <StatItem value={allSlots.length} label="Total" />
+            <StatItem value={open} label="Open" />
+            <StatItem value={booked} label="Booked" />
+            <StatItem value={thisWeek.length} label="This week" />
+          </StatBar>
           <LoadingLine loading={slots.loading} />
           <ErrorBlock error={slots.error} />
-          <SlotList slots={slots.data ?? []} />
+          {thisWeek.length > 0 ? (
+            <section style={{ marginBottom: 28 }}>
+              <SectionKicker>THIS WEEK</SectionKicker>
+              <SlotList slots={thisWeek} />
+            </section>
+          ) : null}
+          {later.length > 0 ? (
+            <section>
+              <SectionKicker>LATER</SectionKicker>
+              <SlotList slots={later} />
+            </section>
+          ) : null}
+          {!thisWeek.length && !later.length && allSlots.length > 0 ? <SlotList slots={allSlots} /> : null}
         </RequireSession>
       </div>
     </section>

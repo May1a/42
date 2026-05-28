@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, type ReactNode } from "react";
 import Link from "next/link";
 import { Badge, EmptyState } from "@/components/status";
 import {
@@ -33,6 +33,44 @@ export function Info({ label, value, mono }: { label: string; value: string; mon
       </dd>
     </div>
   );
+}
+
+export function StatItem({ value, label, href }: { value: ReactNode; label: ReactNode; href?: string }) {
+  const inner = (
+    <>
+      <span className="stat-num">{value}</span>
+      <span className="stat-label">{label}</span>
+    </>
+  );
+  if (href) {
+    return (
+      <a className="stat-item" href={href}>
+        {inner}
+      </a>
+    );
+  }
+  return <span className="stat-item">{inner}</span>;
+}
+
+export function StatBar({ children }: { children: ReactNode }) {
+  const items = Array.isArray(children) ? children : [children];
+  return (
+    <div className="stat-bar">
+      {items.filter(Boolean).map((child, i) => {
+        if (!child) return null;
+        return (
+          <span key={i} style={{ display: "contents" }}>
+            {i > 0 ? <span className="stat-sep" aria-hidden /> : null}
+            {child}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+export function SectionKicker({ children }: { children: ReactNode }) {
+  return <div className="section-kicker">{children}</div>;
 }
 
 export function ProfileSummary({ user }: { user: FortyTwoUser }) {
@@ -87,7 +125,22 @@ export function StudentTable({ rows }: { rows: StudentRow[] }) {
                 <Link href={`/students/${row.user.login}`}>{row.user.login}</Link>
               </td>
               <td>{displayName(row.user)}</td>
-              <td className="mono">{row.cursusUser?.level?.toFixed(2) ?? row.user.cursus_users?.[0]?.level?.toFixed(2) ?? "n/a"}</td>
+              <td className="roster-level-cell">
+                {(() => {
+                  const level = row.cursusUser?.level ?? row.user.cursus_users?.[0]?.level;
+                  if (level == null) return <span className="muted mono">n/a</span>;
+                  const lvlNum = Math.floor(level);
+                  const lvlPct = Math.round((level - lvlNum) * 100);
+                  return (
+                    <div className="roster-level">
+                      <span className="roster-level-num">{lvlNum}</span>
+                      <div className="roster-level-track">
+                        <div className="roster-level-fill" style={{ width: `${lvlPct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })()}
+              </td>
               <td className="mono nowrap">{formatDate(row.cursusUser?.begin_at ?? row.user.cursus_users?.[0]?.begin_at)}</td>
               <td>
                 {row.user.location ? (
