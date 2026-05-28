@@ -12,7 +12,7 @@ export default function Page() {
 }
 
 function tokenTimeRemaining(session: ClientSession | null) {
-  if (!session?.expiresAt || sessionExpired(session)) return "n/a";
+  if (!session?.loggedIn || !session.expiresAt) return "n/a";
   const remaining = new Date(session.expiresAt).getTime() - Date.now();
   if (remaining <= 0) return "expired";
   const minutes = Math.floor(remaining / 60000);

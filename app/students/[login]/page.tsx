@@ -21,7 +21,7 @@ function ProfileRoute({ session }: { session: ClientSession | null }) {
   const projects = useApiResource<ProjectUser[]>(session, user.data?.id ? `/users/${user.data.id}/projects_users` : null, { "page.size": 100, sort: "-updated_at" }, SEARCH_TTL);
   const scales = useApiResource<ScaleTeam[]>(session, user.data?.id ? `/users/${user.data.id}/scale_teams` : null, { "page.size": 50, sort: "-begin_at" }, SEARCH_TTL);
 
-  const campusName = primaryCampusName(user.data);
+  const campusName = user.data ? primaryCampusName(user.data) : null;
   const projectCount = projects.data?.length ?? 0;
   const evalCount = scales.data?.length ?? 0;
 
@@ -37,7 +37,7 @@ function ProfileRoute({ session }: { session: ClientSession | null }) {
             Open on 42
           </a>
         ) : null}
-        meta={campusName && level != null ? <>{campusName} / level {level.toFixed(2)}</> : campusName ?? null}
+        meta={user.data && campusName && level != null ? <>{campusName} / level {level.toFixed(2)}</> : campusName}
       />
       <div className="page-body">
         <RequireSession session={session}>

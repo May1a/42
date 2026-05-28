@@ -16,7 +16,7 @@
   --color-vermillion-tint: oklch(95% 0.04 28);
 
   --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
 
   --radius-0: 0;
 }
@@ -110,7 +110,7 @@ textarea {
   padding: 0 8px;
   text-decoration: none;
   color: var(--ink);
-  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
   font-size: 0.9375rem;
   font-weight: 600;
   letter-spacing: -0.02em;
@@ -131,7 +131,7 @@ textarea {
 
 .nav-group-label {
   padding: 16px 12px 4px;
-  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
   font-size: 0.625rem;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -212,7 +212,7 @@ textarea {
   gap: 8px;
   flex-wrap: wrap;
   color: var(--ink-mute);
-  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
   font-size: 0.6875rem;
   letter-spacing: 0.02em;
 }
@@ -223,7 +223,7 @@ textarea {
   gap: 10px;
   padding-top: 2px;
   color: var(--ink-mute);
-  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
   font-size: 0.625rem;
   letter-spacing: 0.04em;
 }
@@ -265,7 +265,7 @@ textarea {
   gap: 8px;
   flex-wrap: wrap;
   color: var(--ink-mute);
-  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
   font-size: 0.6875rem;
   letter-spacing: 0.02em;
 }
@@ -276,7 +276,7 @@ textarea {
   gap: 10px;
   padding-top: 2px;
   color: var(--ink-mute);
-  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
   font-size: 0.625rem;
   letter-spacing: 0.04em;
 }
@@ -301,7 +301,7 @@ textarea {
 /* ---- Section kicker ---------------------------------------------------- */
 
 .section-kicker {
-  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
   font-size: 0.625rem;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -362,7 +362,7 @@ textarea {
   color: var(--ink-mute);
   font-size: 0.8125rem;
   text-align: center;
-  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
 }
 
 .error {
@@ -400,7 +400,7 @@ textarea {
   padding: 0 12px;
   cursor: pointer;
   text-decoration: none;
-  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
   font-size: 0.6875rem;
   font-weight: 500;
   letter-spacing: 0.02em;
@@ -449,7 +449,7 @@ textarea {
   display: grid;
   gap: 4px;
   color: var(--ink-soft);
-  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
   font-size: 0.625rem;
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -531,7 +531,7 @@ table {
 th {
   background: var(--paper-rule);
   color: var(--ink-soft);
-  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
   font-weight: 600;
   font-size: 0.625rem;
   letter-spacing: 0.06em;
@@ -599,7 +599,7 @@ td.mono a:hover {
   border: 1px solid var(--rule);
   background: var(--paper-rule);
   object-fit: cover;
-  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
   font-size: 0.625rem;
   color: var(--ink-mute);
   letter-spacing: 0.04em;
@@ -646,7 +646,7 @@ td.mono a:hover {
 }
 
 .stat-num {
-  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
   font-size: 1.0625rem;
   font-weight: 600;
   color: var(--plotter-blue);
@@ -654,7 +654,7 @@ td.mono a:hover {
 }
 
 .stat-label {
-  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
   font-size: 0.625rem;
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -698,7 +698,7 @@ td.mono a:hover {
 }
 
 .roster-overview-num {
-  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
   font-size: 0.9375rem;
   font-weight: 600;
   color: var(--plotter-blue);
@@ -706,7 +706,7 @@ td.mono a:hover {
 }
 
 .roster-overview-label {
-  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
   font-size: 0.625rem;
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -734,7 +734,7 @@ td.mono a:hover {
 }
 
 .roster-level-num {
-  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
   font-size: 0.6875rem;
   color: var(--ink-soft);
   font-variant-numeric: tabular-nums;
@@ -785,7 +785,7 @@ td.mono a:hover {
 }
 
 .cluster-strip-label {
-  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
   font-size: 0.625rem;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -807,7 +807,7 @@ td.mono a:hover {
   border: 1px solid var(--rule);
   background: var(--paper);
   color: var(--ink-soft);
-  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
   font-size: 0.6875rem;
   letter-spacing: 0.02em;
   cursor: pointer;
@@ -852,7 +852,7 @@ td.mono a:hover {
 
 .info-label {
   color: var(--ink-mute);
-  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
   font-size: 0.625rem;
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -958,7 +958,7 @@ td.mono a:hover {
   color: var(--ink);
   cursor: pointer;
   border-radius: 0;
-  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
   font-size: 0.625rem;
   font-weight: 500;
   letter-spacing: 0.04em;
@@ -996,7 +996,7 @@ td.mono a:hover {
   background: var(--paper);
   padding: 0 10px;
   cursor: pointer;
-  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
   font-size: 0.625rem;
   font-weight: 500;
   letter-spacing: 0.04em;
@@ -1025,7 +1025,7 @@ td.mono a:hover {
   display: inline-flex;
   align-items: center;
   padding: 1px 6px;
-  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
   font-size: 0.625rem;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -1096,7 +1096,7 @@ td.mono a:hover {
 }
 
 .mono {
-  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
   font-size: 0.8125rem;
   line-height: 1.4;
 }
