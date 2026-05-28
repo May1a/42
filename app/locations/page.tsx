@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { RequireSession } from "@/components/AppShell";
 import { ClientRoot } from "@/components/ClientRoot";
 import { PlainButton, SelectField, TextField } from "@/components/forms";
-import { LocationTable } from "@/components/page-sections";
+import { ClusterStrip, LocationTable, hostCluster } from "@/components/page-sections";
 import { EmptyState, ErrorBlock, LoadingLine, PageTitle } from "@/components/status";
 import { LOCATIONS_AUTO_REFRESH_KEY, SEARCH_TTL, SELECTED_CAMPUS_KEY, useCampuses, useMe, useStoredString } from "@/lib/page-data";
 import { useApiResource } from "@/lib/use-api-resource";
@@ -20,6 +20,7 @@ function LocationsRoute({ session }: { session: ClientSession | null }) {
   const me = useMe(session);
   const [campusId, setCampusId] = useStoredString(SELECTED_CAMPUS_KEY);
   const [query, setQuery] = useState("");
+  const [cluster, setCluster] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
   const [autoRefresh, setAutoRefresh] = useStoredString(LOCATIONS_AUTO_REFRESH_KEY, "on");
   const effectiveCampusId = campusId || primaryCampusId(me.data);
@@ -30,9 +31,12 @@ function LocationsRoute({ session }: { session: ClientSession | null }) {
     SEARCH_TTL,
     refreshKey
   );
-  const filtered = (locations.data ?? []).filter((location) => {
+  const allLocations = locations.data ?? [];
+  const filtered = allLocations.filter((location) => {
     const text = `${location.host} ${location.user?.login ?? ""} ${displayName(location.user)}`.toLowerCase();
-    return !query.trim() || text.includes(query.trim().toLowerCase());
+    const matchesQuery = !query.trim() || text.includes(query.trim().toLowerCase());
+    const matchesCluster = !cluster || hostCluster(location.host) === cluster;
+    return matchesQuery && matchesCluster;
   });
 
   useEffect(() => {
@@ -49,7 +53,10 @@ function LocationsRoute({ session }: { session: ClientSession | null }) {
         title="Locations"
         aside={
           <>
-            <span className="nowrap">{filtered.length} online</span>
+            <span className="nowrap">
+              {filtered.length}
+              {cluster || query.trim() ? <span className="muted"> / {allLocations.length}</span> : null} online
+            </span>
             <PlainButton onClick={() => setRefreshKey((value) => value + 1)}>Refresh</PlainButton>
             <PlainButton onClick={() => setAutoRefresh(autoRefresh === "on" ? "off" : "on")}>{autoRefresh === "on" ? "Auto: on" : "Auto: off"}</PlainButton>
           </>
@@ -70,7 +77,14 @@ function LocationsRoute({ session }: { session: ClientSession | null }) {
           </div>
           <LoadingLine loading={me.loading || campuses.loading || locations.loading} />
           <ErrorBlock error={me.error || campuses.error || locations.error} />
-          {!effectiveCampusId && !me.loading ? <EmptyState>No primary campus found.</EmptyState> : <LocationTable locations={filtered} />}
+          {!effectiveCampusId && !me.loading ? (
+            <EmptyState>No primary campus found.</EmptyState>
+          ) : (
+            <>
+              <ClusterStrip locations={allLocations} active={cluster} onSelect={setCluster} />
+              <LocationTable locations={filtered} meLogin={me.data?.login} />
+            </>
+          )}
         </RequireSession>
       </div>
     </section>

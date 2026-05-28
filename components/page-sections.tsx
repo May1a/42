@@ -106,28 +106,119 @@ export function StudentTable({ rows }: { rows: StudentRow[] }) {
   );
 }
 
-export function LocationTable({ locations }: { locations: Location[] }) {
+function elapsedSince(iso?: string | null) {
+  if (!iso) return "n/a";
+  const ms = Date.now() - new Date(iso).getTime();
+  if (Number.isNaN(ms) || ms < 0) return "n/a";
+  const minutes = Math.floor(ms / 60000);
+  if (minutes < 1) return "<1m";
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const remMin = minutes % 60;
+  if (hours < 24) return remMin ? `${hours}h ${remMin}m` : `${hours}h`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ${hours % 24}h`;
+}
+
+export function hostCluster(host: string) {
+  if (!host) return "";
+  const match = host.match(/^[a-zA-Z]*\d+[a-zA-Z]?|^[a-zA-Z]+/);
+  if (match) return match[0].toLowerCase();
+  const piece = host.split(/[-.]/, 1)[0];
+  return (piece || host.slice(0, 2)).toLowerCase();
+}
+
+export function ClusterStrip({
+  locations,
+  active,
+  onSelect
+}: {
+  locations: Location[];
+  active: string;
+  onSelect: (cluster: string) => void;
+}) {
+  if (!locations.length) return null;
+  const counts = new Map<string, number>();
+  for (const loc of locations) {
+    const key = hostCluster(loc.host);
+    if (!key) continue;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  if (sorted.length <= 1) return null;
+  return (
+    <div className="cluster-strip" aria-label="Clusters">
+      <span className="cluster-strip-label">CLUSTERS</span>
+      <div className="cluster-strip-track">
+        <button
+          type="button"
+          className={`cluster-chip${active ? "" : " active"}`}
+          onClick={() => onSelect("")}
+        >
+          <span className="cluster-chip-name">all</span>
+          <span className="cluster-chip-count">{locations.length}</span>
+        </button>
+        {sorted.map(([key, count]) => (
+          <button
+            key={key}
+            type="button"
+            className={`cluster-chip${active === key ? " active" : ""}`}
+            onClick={() => onSelect(active === key ? "" : key)}
+          >
+            <span className="cluster-chip-name">{key}</span>
+            <span className="cluster-chip-count">{count}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function LocationTable({ locations, meLogin }: { locations: Location[]; meLogin?: string | null }) {
   if (!locations.length) {
     return <EmptyState>No active locations found.</EmptyState>;
   }
   return (
-    <div className="table-wrap">
-      <table>
+    <div className="table-wrap roster-wrap">
+      <table className="roster-table">
         <thead>
           <tr>
-            <th>User</th>
+            <th aria-label="Avatar" />
+            <th>Login</th>
+            <th>Name</th>
             <th>Host</th>
+            <th className="num">Elapsed</th>
             <th>Since</th>
           </tr>
         </thead>
         <tbody>
-          {locations.map((location) => (
-            <tr key={location.id}>
-              <td className="mono">{location.user?.login ? <Link href={`/students/${location.user.login}`}>{location.user.login}</Link> : "Unknown"}</td>
-              <td className="mono">{location.host}</td>
-              <td className="mono nowrap">{formatDateTime(location.begin_at)}</td>
-            </tr>
-          ))}
+          {locations.map((location) => {
+            const user = location.user;
+            const image = userImage(user);
+            const login = user?.login;
+            const isMe = Boolean(meLogin && login && login === meLogin);
+            return (
+              <tr key={location.id} className={isMe ? "row-me" : undefined}>
+                <td className="roster-avatar-cell">
+                  {image ? (
+                    <img alt="" className="roster-avatar" src={image} />
+                  ) : (
+                    <span className="roster-avatar roster-avatar-fallback" aria-hidden>
+                      {login ? login.slice(0, 2).toUpperCase() : "—"}
+                    </span>
+                  )}
+                </td>
+                <td className="mono">
+                  {login ? <Link href={`/students/${login}`}>{login}</Link> : <span className="muted">unknown</span>}
+                  {isMe ? <span className="badge badge-live roster-me-tag">you</span> : null}
+                </td>
+                <td>{user ? displayName(user) : <span className="muted">n/a</span>}</td>
+                <td className="mono">{location.host}</td>
+                <td className="mono num">{elapsedSince(location.begin_at)}</td>
+                <td className="mono nowrap muted">{formatDateTime(location.begin_at)}</td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

@@ -521,6 +521,134 @@ td.mono a:hover {
   text-decoration: underline;
 }
 
+/* ---- Roster (locations) ------------------------------------------------ */
+
+.roster-table {
+  min-width: 760px;
+}
+
+.roster-table th.num,
+.roster-table td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.roster-table th:first-child,
+.roster-table td.roster-avatar-cell {
+  width: 44px;
+  padding-right: 0;
+}
+
+.roster-avatar-cell {
+  vertical-align: middle;
+}
+
+.roster-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--rule);
+  background: var(--paper-rule);
+  object-fit: cover;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-size: 0.625rem;
+  color: var(--ink-mute);
+  letter-spacing: 0.04em;
+}
+
+.roster-avatar-fallback {
+  text-transform: uppercase;
+}
+
+.roster-table tr.row-me td {
+  background: var(--plotter-blue-tint);
+}
+
+.roster-table tr.row-me:hover td {
+  background: var(--plotter-blue-tint);
+}
+
+.roster-table tr.row-me .roster-avatar {
+  border-color: var(--plotter-blue);
+}
+
+.roster-me-tag {
+  margin-left: 8px;
+  vertical-align: 1px;
+}
+
+/* ---- Cluster distribution strip --------------------------------------- */
+
+.cluster-strip {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+}
+
+.cluster-strip-label {
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+
+.cluster-strip-track {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cluster-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 8px;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  color: var(--ink-soft);
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  border-radius: 0;
+  transition: border-color 80ms ease-out, color 80ms ease-out, background-color 80ms ease-out;
+}
+
+.cluster-chip:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.cluster-chip .cluster-chip-name {
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.cluster-chip .cluster-chip-count {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-mute);
+}
+
+.cluster-chip.active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+.cluster-chip.active .cluster-chip-count {
+  color: var(--paper);
+  opacity: 0.7;
+}
+
 /* ---- Info grid --------------------------------------------------------- */
 
 .info-grid {
