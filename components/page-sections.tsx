@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { Badge, EmptyState } from "@/components/status";
 import {
@@ -128,6 +129,14 @@ export function hostCluster(host: string) {
   return (piece || host.slice(0, 2)).toLowerCase();
 }
 
+const PREFERRED_CURSUS_ID = 21;
+
+export function levelForLocation(location: Location) {
+  const cuList = location.user?.cursus_users;
+  if (!cuList?.length) return null;
+  return cuList.find((c) => c.cursus?.id === PREFERRED_CURSUS_ID) ?? cuList.find((c) => !c.end_at) ?? cuList[cuList.length - 1];
+}
+
 export function ClusterStrip({
   locations,
   active,
@@ -175,6 +184,19 @@ export function ClusterStrip({
 }
 
 export function LocationTable({ locations, meLogin }: { locations: Location[]; meLogin?: string | null }) {
+  const [copiedHostId, setCopiedHostId] = useState<number | null>(null);
+  const timerRef = useRef<number | null>(null);
+
+  function copyHost(locationId: number, host: string) {
+    navigator.clipboard.writeText(host).catch(() => {});
+    if (timerRef.current != null) window.clearTimeout(timerRef.current);
+    setCopiedHostId(locationId);
+    timerRef.current = window.setTimeout(() => {
+      setCopiedHostId(null);
+      timerRef.current = null;
+    }, 1500);
+  }
+
   if (!locations.length) {
     return <EmptyState>No active locations found.</EmptyState>;
   }
@@ -187,6 +209,7 @@ export function LocationTable({ locations, meLogin }: { locations: Location[]; m
             <th>Login</th>
             <th>Name</th>
             <th>Host</th>
+            <th>Level</th>
             <th className="num">Elapsed</th>
             <th>Since</th>
           </tr>
@@ -197,6 +220,10 @@ export function LocationTable({ locations, meLogin }: { locations: Location[]; m
             const image = userImage(user);
             const login = user?.login;
             const isMe = Boolean(meLogin && login && login === meLogin);
+            const cursusUser = levelForLocation(location);
+            const level = cursusUser?.level;
+            const lvlNum = level != null ? Math.floor(level) : null;
+            const lvlPct = level != null ? Math.round((level - Math.floor(level)) * 100) : null;
             return (
               <tr key={location.id} className={isMe ? "row-me" : undefined}>
                 <td className="roster-avatar-cell">
@@ -204,7 +231,7 @@ export function LocationTable({ locations, meLogin }: { locations: Location[]; m
                     <img alt="" className="roster-avatar" src={image} />
                   ) : (
                     <span className="roster-avatar roster-avatar-fallback" aria-hidden>
-                      {login ? login.slice(0, 2).toUpperCase() : "—"}
+                      {login ? login.slice(0, 2).toUpperCase() : "\u2014"}
                     </span>
                   )}
                 </td>
@@ -213,7 +240,27 @@ export function LocationTable({ locations, meLogin }: { locations: Location[]; m
                   {isMe ? <span className="badge badge-live roster-me-tag">you</span> : null}
                 </td>
                 <td>{user ? displayName(user) : <span className="muted">n/a</span>}</td>
-                <td className="mono">{location.host}</td>
+                <td className="mono">
+                  <span
+                    className={`roster-host${copiedHostId === location.id ? " copied" : ""}`}
+                    onClick={() => copyHost(location.id, location.host)}
+                    title="Click to copy"
+                  >
+                    {copiedHostId === location.id ? "copied" : location.host}
+                  </span>
+                </td>
+                <td className="roster-level-cell">
+                  {level != null ? (
+                    <div className="roster-level">
+                      <span className="roster-level-num">{lvlNum}</span>
+                      <div className="roster-level-track">
+                        <div className="roster-level-fill" style={{ width: `${lvlPct}%` }} />
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="muted mono">n/a</span>
+                  )}
+                </td>
                 <td className="mono num">{elapsedSince(location.begin_at)}</td>
                 <td className="mono nowrap muted">{formatDateTime(location.begin_at)}</td>
               </tr>
@@ -221,6 +268,29 @@ export function LocationTable({ locations, meLogin }: { locations: Location[]; m
           })}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+export function RosterOverview({ count, total, campusName }: { count: number; total?: number; campusName?: string }) {
+  if (!count && !total) return null;
+  return (
+    <div className="roster-overview">
+      <div className="roster-overview-stat">
+        <span className="roster-overview-num">{count}</span>
+        <span className="roster-overview-label">online</span>
+        {total != null && total !== count ? (
+          <span className="roster-overview-label" style={{ color: "var(--ink-mute)" }}>
+            / {total}
+          </span>
+        ) : null}
+      </div>
+      {campusName ? (
+        <>
+          <span className="roster-overview-sep" aria-hidden />
+          <span className="roster-overview-label">{campusName}</span>
+        </>
+      ) : null}
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { RequireSession } from "@/components/AppShell";
 import { ClientRoot } from "@/components/ClientRoot";
 import { PlainButton, SelectField, TextField } from "@/components/forms";
-import { ClusterStrip, LocationTable, hostCluster } from "@/components/page-sections";
+import { ClusterStrip, LocationTable, RosterOverview, hostCluster } from "@/components/page-sections";
 import { EmptyState, ErrorBlock, LoadingLine, PageTitle } from "@/components/status";
 import { LOCATIONS_AUTO_REFRESH_KEY, SEARCH_TTL, SELECTED_CAMPUS_KEY, useCampuses, useMe, useStoredString } from "@/lib/page-data";
 import { useApiResource } from "@/lib/use-api-resource";
@@ -24,6 +24,7 @@ function LocationsRoute({ session }: { session: ClientSession | null }) {
   const [refreshKey, setRefreshKey] = useState(0);
   const [autoRefresh, setAutoRefresh] = useStoredString(LOCATIONS_AUTO_REFRESH_KEY, "on");
   const effectiveCampusId = campusId || primaryCampusId(me.data);
+  const campusName = (campuses.data ?? []).find((c) => String(c.id) === effectiveCampusId)?.name;
   const locations = useApiResource<Location[]>(
     session,
     effectiveCampusId ? `/campus/${effectiveCampusId}/locations` : null,
@@ -81,6 +82,7 @@ function LocationsRoute({ session }: { session: ClientSession | null }) {
             <EmptyState>No primary campus found.</EmptyState>
           ) : (
             <>
+              <RosterOverview count={filtered.length} total={allLocations.length !== filtered.length ? allLocations.length : undefined} campusName={campusName} />
               <ClusterStrip locations={allLocations} active={cluster} onSelect={setCluster} />
               <LocationTable locations={filtered} meLogin={me.data?.login} />
             </>
